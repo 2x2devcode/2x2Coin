@@ -2,7 +2,7 @@
 
 🚀 Overview
 
-2x2 is a decentralized cryptocurrency project designed for long-term sustainability, network security, and predictable coin issuance. The project uses a hybrid Proof-of-Work (PoW) and Proof-of-Stake (PoS) consensus mechanism with a fixed premine and a controlled annual coin emission schedule.
+2x2 is a decentralized cryptocurrency project designed for long-term sustainability, network security, and predictable coin issuance. The project uses a hybrid Proof-of-Work (PoW) "up to block 110000" and Proof-of-Stake (PoS) consensus mechanism with a fixed premine and a controlled annual coin emission schedule.
 
 2x2 aims to provide:
 
@@ -49,7 +49,7 @@ Tail emission (year 20+): 1,000 coins per block
 The coin supply schedule ensures high initial growth to bootstrap the network, followed by controlled long-term inflation and a stable tail emission.
 
 ⚙️ Consensus Mechanism
-Proof-of-Work (PoW)
+Proof-of-Work (PoW) "up to block 110000"
 
 Rewards decrease over time according to a deterministic block schedule
 
@@ -65,7 +65,7 @@ Rewards are equal to PoW rewards per block after early phase
 
 Sustainable & predictable inflation for 20+ years
 
-Hybrid PoW/PoS consensus for security and decentralization
+Hybrid PoW "up to block 110000"/POS consensus for security and decentralization
 
 Clear long-term coin supply plan with tail emission
 
@@ -75,7 +75,9 @@ Deterministic block rewards to maintain network incentives
 
 2x2 Whitepaper (Draft)
 
-Official Website
+Official Website https://2x2coin.com/
+
+Block Explorer https://explorer.2x2coin.com/
 
 GitHub Repository
 
