@@ -118,6 +118,12 @@ public:
 
         vSeeds.push_back(CDNSSeedData("161.97.176.125", "161.97.176.125"));
         vSeeds.push_back(CDNSSeedData("77.237.232.84", "77.237.232.84"));
+        vSeeds.push_back(CDNSSeedData("161.97.176.125", "161.97.176.125"));
+        vSeeds.push_back(CDNSSeedData("77.237.232.84", "77.237.232.84"));
+        vSeeds.push_back(CDNSSeedData("75.119.137.26", "75.119.137.26"));
+        vSeeds.push_back(CDNSSeedData("149.102.139.53", "149.102.139.53"));
+        vSeeds.push_back(CDNSSeedData("144.91.107.244", "144.91.107.244"));
+		vSeeds.push_back(CDNSSeedData("38.242.236.173", "38.242.236.173"));
         vSeeds.push_back(CDNSSeedData("seed.quimeralabs.org", "seed.quimeralabs.org"));
         vSeeds.push_back(CDNSSeedData("seed1.quimeralabs.org", "seed1.quimeralabs.org"));
         vSeeds.push_back(CDNSSeedData("seed2.quimeralabs.org", "seed2.quimeralabs.org"));
