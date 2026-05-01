@@ -1787,84 +1787,11 @@ CAmount GetProofOfWorkSubsidy()
         return 11000000 * COIN;
     }
 
-    if (nBlockHeight > 1 && nBlockHeight <= 262800) {
+    if (nBlockHeight > 1 && nBlockHeight <= 110010) {
         return 100 * COIN;
     }
-
-    if (nBlockHeight > 262800 && nBlockHeight <= 525600) {
-        return 200 * COIN;
-    }
-
-    if (nBlockHeight > 525600 && nBlockHeight <= 788400) {
-        return 550 * COIN;
-    }
-
-    if (nBlockHeight > 788400 && nBlockHeight <= 1051200) {
-        return 1300 * COIN;
-    }
-
-    if (nBlockHeight > 1051200 && nBlockHeight <= 1314000) {
-        return 3250 * COIN;
-    }
-
-    if (nBlockHeight > 1314000 && nBlockHeight <= 1576800) {
-        return 8000 * COIN;
-    }
-
-    if (nBlockHeight > 1576800 && nBlockHeight <= 1839600) {
-        return 3500 * COIN;
-    }
-
-    if (nBlockHeight > 1839600 && nBlockHeight <= 2102400) {
-        return 4500 * COIN;
-    }
-
-    if (nBlockHeight > 2102400 && nBlockHeight <= 2365200) {
-        return 5600 * COIN;
-    }
-
-    if (nBlockHeight > 2365200 && nBlockHeight <= 2628000) {
-        return 7000 * COIN;
-    }
-
-    if (nBlockHeight > 2628000 && nBlockHeight <= 2890800) {
-        return 8800 * COIN;
-    }
-
-    if (nBlockHeight > 2890800 && nBlockHeight <= 3153600) {
-        return 11000 * COIN;
-    }
-
-    if (nBlockHeight > 3153600 && nBlockHeight <= 3416400) {
-        return 14080 * COIN;
-    }
-
-    if (nBlockHeight > 3416400 && nBlockHeight <= 3679200) {
-        return 17500 * COIN;
-    }
-
-    if (nBlockHeight > 3679200 && nBlockHeight <= 3942000) {
-        return 22500 * COIN;
-    }
-
-    if (nBlockHeight > 3942000 && nBlockHeight <= 4204800) {
-        return 28000 * COIN;
-    }
-
-    if (nBlockHeight > 4204800 && nBlockHeight <= 4467600) {
-        return 35500 * COIN;
-    }
-
-    if (nBlockHeight > 4467600 && nBlockHeight <= 4730400) {
-        return 44500 * COIN;
-    }
-
-    if (nBlockHeight > 4730400 && nBlockHeight <= 4993200) {
-        return 55000 * COIN;
-    }
-
     // Year 20+ (tail emission)
-    return 1000 * COIN;
+    return 1 * COIN;
 }
 
 CAmount GetProofOfStakeSubsidy()
