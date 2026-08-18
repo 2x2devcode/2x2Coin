@@ -32,8 +32,8 @@ public final class NetworkParameters {
     public static final String PUBLIC_EXPLORER_HOST = "explorer.2x2coin.com";
     /** Local bind on VPS; public URL uses HTTPS :443 via reverse proxy. */
     public static final String SERVER_BIND_HOST = "127.0.0.1";
-    public static final int OFFICIAL_API_PORT = 40012;
-    public static final int EXPLORER_PORT = 40061;
+    public static final int OFFICIAL_API_PORT = 50012;
+    public static final int EXPLORER_PORT = 50011;
     public static final String OFFICIAL_API_BASE_URL = "https://" + OFFICIAL_API_HOST;
     public static final String EXPLORER_BASE_URL = "https://" + EXPLORER_HOST;
     public static final String PUBLIC_EXPLORER_BASE_URL = "https://" + PUBLIC_EXPLORER_HOST;

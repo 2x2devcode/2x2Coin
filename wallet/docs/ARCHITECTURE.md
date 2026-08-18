@@ -51,8 +51,8 @@ Dois processos JSON (sem interface web) no mesmo servidor:
 
 | Classe | Bind VPS | URL pública | Rotas |
 |---|---|---|---|
-| `X2xServer` | `127.0.0.1:40012` | `https://server.2x2coin.com` | `/api/*` |
-| `X2xExplorerServer` | `127.0.0.1:40061` | `https://serverexplorer.2x2coin.com` | `/ext/*` |
+| `X2xServer` | `127.0.0.1:50012` | `https://server.2x2coin.com` | `/api/*` |
+| `X2xExplorerServer` | `127.0.0.1:50011` | `https://serverexplorer.2x2coin.com` | `/ext/*` |
 
 Scripts: `scripts/build-server-services.sh`, `scripts/run-server-services.sh`
 

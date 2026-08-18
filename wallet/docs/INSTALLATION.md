@@ -63,6 +63,14 @@ git pull origin main
 bash scripts/restart-server-services.sh
 ```
 
+Para parar API e explorer:
+
+```bash
+bash scripts/stop-server-services.sh
+```
+
+O script mata os PIDs em `wallet/.run/` e, se ainda houver processo nas portas `50012`/`50011`, encerra quem estiver escutando. Nao para o daemon `2x2coind`.
+
 Para teste interativo (encerra ao pressionar Ctrl+C):
 
 ```bash
@@ -71,8 +79,8 @@ bash scripts/run-server-services.sh
 
 | Serviço | URL pública | Bind local (VPS) | Endpoints |
 |---|---|---|---|
-| API oficial | `https://server.2x2coin.com` | `127.0.0.1:40012` | `/api/*` |
-| Explorer fallback | `https://serverexplorer.2x2coin.com` | `127.0.0.1:40061` | `/ext/*` |
+| API oficial | `https://server.2x2coin.com` | `127.0.0.1:50012` | `/api/*` |
+| Explorer fallback | `https://serverexplorer.2x2coin.com` | `127.0.0.1:50011` | `/ext/*` |
 
 Exemplo nginx (API) — use `scripts/nginx-x2x-api.conf.example` (inclui `proxy_read_timeout 30s`):
 
@@ -81,7 +89,7 @@ server {
     listen 443 ssl;
     server_name server.2x2coin.com;
     location / {
-        proxy_pass http://127.0.0.1:40012;
+        proxy_pass http://127.0.0.1:50012;
         proxy_read_timeout 30s;
     }
 }
@@ -94,7 +102,7 @@ server {
     listen 443 ssl;
     server_name serverexplorer.2x2coin.com;
     location / {
-        proxy_pass http://127.0.0.1:40061;
+        proxy_pass http://127.0.0.1:50011;
     }
 }
 ```
@@ -165,7 +173,7 @@ Causas comuns:
 Teste local antes do HTTPS:
 
 ```bash
-curl -s http://127.0.0.1:40012/api/health
-curl -s http://127.0.0.1:40061/ext/health
+curl -s http://127.0.0.1:50012/api/health
+curl -s http://127.0.0.1:50011/ext/health
 ```
 

@@ -10,7 +10,7 @@ O servidor instala em uma VPS Linux, chama **`2x2coin-cli`** (o mesmo cliente do
 |---|---|
 | `x2x-core` | Parâmetros da rede, criptografia, transações e armazenamento da carteira |
 | `x2x-api` | Cliente HTTP com TLS, retry, failover e certificate pinning |
-| `x2x-server` | API JSON em `127.0.0.1:40012` e explorer em `127.0.0.1:40061` |
+| `x2x-server` | API JSON em `127.0.0.1:50012` e explorer em `127.0.0.1:50011` |
 | `x2x-android` | Aplicativo Android 15+ (omitido se o SDK não estiver instalado) |
 
 ## Parâmetros da rede (mainnet)
@@ -44,14 +44,20 @@ bash scripts/ubuntu-22.04-api.sh
 O script instala JDK 17 se necessário, roda os testes Gradle, sobe um `MockRpcServer` quando o daemon não está no ar, inicia API + explorer e valida:
 
 ```bash
-curl -s http://127.0.0.1:40012/api/health
-curl -s http://127.0.0.1:40061/ext/health
+curl -s http://127.0.0.1:50012/api/health
+curl -s http://127.0.0.1:50011/ext/health
 ```
 
 Para deixar os serviços rodando após o smoke test:
 
 ```bash
 KEEP_RUNNING=1 bash scripts/ubuntu-22.04-api.sh
+```
+
+Para parar API e explorer depois:
+
+```bash
+bash scripts/stop-server-services.sh
 ```
 
 Com `2x2coind` já sincronizado, `2x2coin-cli` no PATH e `~/.2x2coin/2x2coin.conf` configurado, o script usa o CLI real. Sem daemon, sobe `MockRpcServer` e `scripts/mock-2x2coin-cli.sh` (mesmos argumentos do `2x2coin-cli`).
@@ -61,13 +67,14 @@ Com `2x2coind` já sincronizado, `2x2coin-cli` no PATH e `~/.2x2coin/2x2coin.con
 ```bash
 cd wallet
 ./gradlew :x2x-core:test :x2x-server:installDist
-bash scripts/restart-server-services.sh
+bash scripts/restart-server-services.sh   # sobe em segundo plano
+bash scripts/stop-server-services.sh      # para API (50012) e explorer (50011)
 ```
 
 | Serviço | URL pública | Bind local | Rotas |
 |---|---|---|---|
-| API oficial | `https://server.2x2coin.com` | `127.0.0.1:40012` | `/api/*` |
-| Explorer JSON | `https://serverexplorer.2x2coin.com` | `127.0.0.1:40061` | `/ext/*` |
+| API oficial | `https://server.2x2coin.com` | `127.0.0.1:50012` | `/api/*` |
+| Explorer JSON | `https://serverexplorer.2x2coin.com` | `127.0.0.1:50011` | `/ext/*` |
 | Explorer público (fallback) | `https://explorer.2x2coin.com` | — | `/ext/getsummary`, `/ext/getbalance/{addr}` |
 
 Documentação: [INSTALLATION.md](docs/INSTALLATION.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DEVELOPER.md](docs/DEVELOPER.md).
