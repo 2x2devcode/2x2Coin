@@ -87,6 +87,6 @@ bash scripts/test-server-external.sh
 
 As portas `50012`/`50011` não são públicas. Fora da VPS use `https://server.2x2coin.com` e `https://serverexplorer.2x2coin.com` (nginx + DNS).
 
-**Manual do servidor:** [docs/SERVER.md](docs/SERVER.md) — endpoints, JSON, start/stop, nginx e testes.
+**Server manual:** [docs/SERVER.md](docs/SERVER.md) — endpoints, JSON, start/stop, nginx, and tests.
 
 Outros: [INSTALLATION.md](docs/INSTALLATION.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DEVELOPER.md](docs/DEVELOPER.md).

@@ -1,89 +1,89 @@
-# API JSON e Explorer — 2x2Coin
+# 2x2Coin JSON API and Explorer
 
-Manual do servidor da carteira: dois processos Java na VPS que expõem JSON para o app Android. **Não há interface web.** As chaves privadas nunca passam pelo servidor.
+Operator manual for the wallet backend: two Java processes on the VPS that serve JSON to the Android app. **There is no web UI.** Private keys never leave the phone.
 
-Código: `wallet/x2x-server` (`X2xServer` e `X2xExplorerServer`).
+Source: `wallet/x2x-server` (`X2xServer` and `X2xExplorerServer`).
 
-## Visão geral
+## Overview
 
 ```mermaid
 flowchart LR
-    App[App Android] -->|HTTPS 443| Nginx
+    App[Android app] -->|HTTPS 443| Nginx
     Nginx -->|50012 /api| Api[X2xServer]
     Nginx -->|50011 /ext| Exp[X2xExplorerServer]
     Api --> Cli[2x2coin-cli]
     Exp --> Cli
     Cli --> Daemon[2x2coind]
-    Api -.->|saldo ainda nao indexado| Pub[explorer.2x2coin.com]
+    Api -.->|balance not yet indexed| Pub[explorer.2x2coin.com]
 ```
 
-| Processo | Classe | Bind local | URL pública | Rotas |
+| Process | Class | Local bind | Public URL | Routes |
 |---|---|---|---|---|
-| API da carteira | `X2xServer` | `127.0.0.1:50012` | `https://server.2x2coin.com` | `/api/*` |
-| Explorer JSON | `X2xExplorerServer` | `127.0.0.1:50011` | `https://serverexplorer.2x2coin.com` | `/ext/*` |
+| Wallet API | `X2xServer` | `127.0.0.1:50012` | `https://server.2x2coin.com` | `/api/*` |
+| JSON explorer | `X2xExplorerServer` | `127.0.0.1:50011` | `https://serverexplorer.2x2coin.com` | `/ext/*` |
 
-O daemon RPC (`15189`) e as portas `50012`/`50011` **não** devem ficar abertas na internet. Só o nginx em `:443` é público.
+Do not expose daemon RPC (`15189`) or ports `50012`/`50011` on the internet. Only nginx on `:443` should be public.
 
-Cada consulta on-chain é `2x2coin-cli <metodo> [params]`. O Java **não** faz HTTP JSON-RPC no daemon.
+Every on-chain query is `2x2coin-cli <method> [params]`. The Java process does **not** speak HTTP JSON-RPC to the daemon.
 
-Explorer público (só fallback de saldo, não é este processo): `https://explorer.2x2coin.com`.
+Public block explorer (balance fallback only; not this process): `https://explorer.2x2coin.com`.
 
-## Operação rápida (VPS)
+## Quick operations (VPS)
 
-Na pasta `wallet/` (ou na raiz do repositório; os wrappers em `scripts/` redirecionam):
+Run from `wallet/` (or the repo root; wrappers under `scripts/` forward there):
 
 ```bash
-bash scripts/build-server-services.sh      # compila
-bash scripts/restart-server-services.sh    # para, recompila e sobe em segundo plano
-bash scripts/stop-server-services.sh       # para API + explorer (nao para 2x2coind)
-bash scripts/run-server-services.sh        # primeiro plano; Ctrl+C encerra os dois
-bash scripts/diagnose-server.sh            # checagem local
-bash scripts/test-server-external.sh       # checagem HTTPS de qualquer maquina
-bash scripts/deploy-vps.sh                 # git pull + restart + smoke local
+bash scripts/build-server-services.sh      # compile
+bash scripts/restart-server-services.sh    # stop, rebuild, start in the background
+bash scripts/stop-server-services.sh       # stop API + explorer (does not stop 2x2coind)
+bash scripts/run-server-services.sh        # foreground; Ctrl+C stops both
+bash scripts/diagnose-server.sh            # local checks
+bash scripts/test-server-external.sh       # HTTPS checks from any machine
+bash scripts/deploy-vps.sh                 # git pull + restart + local smoke test
 ```
 
-Arquivos em tempo de execução:
+Runtime files:
 
-| Caminho | Uso |
+| Path | Purpose |
 |---|---|
-| `wallet/.run/x2x-api.pid` | PID da API |
-| `wallet/.run/x2x-explorer.pid` | PID do explorer |
-| `wallet/logs/x2x-api.log` | log da API (`restart` / `ubuntu-22.04-api`) |
-| `wallet/logs/x2x-explorer.log` | log do explorer |
-| `~/.x2x-wallet-index` | índice on-chain de saldos/UTXOs (`INDEX_DIR`) |
+| `wallet/.run/x2x-api.pid` | API PID |
+| `wallet/.run/x2x-explorer.pid` | Explorer PID |
+| `wallet/logs/x2x-api.log` | API log (`restart` / `ubuntu-22.04-api`) |
+| `wallet/logs/x2x-explorer.log` | Explorer log |
+| `~/.x2x-wallet-index` | On-chain balance/UTXO index (`INDEX_DIR`) |
 
-`stop-server-services.sh` **não** para `2x2coind`.
+`stop-server-services.sh` does **not** stop `2x2coind`.
 
-## Pré-requisitos
+## Prerequisites
 
 - Ubuntu 22.04+, JDK 17
-- `2x2coind` sincronizado e `2x2coin-cli` no `PATH`
+- Synced `2x2coind` and `2x2coin-cli` on `PATH`
 - `~/.2x2coin/2x2coin.conf`:
 
 ```ini
 server=1
 rpcuser=x2xrpc
-rpcpassword=<senha-forte>
+rpcpassword=<strong-password>
 rpcport=15189
 rpcallowip=127.0.0.1
 ```
 
-Depois de mudar usuário/senha, reinicie o daemon (`2x2coind stop` e `2x2coind -daemon`). Confirme `2x2coin-cli getinfo`.
+After changing user/password, restart the daemon (`2x2coind stop` then `2x2coind -daemon`). Confirm with `2x2coin-cli getinfo`.
 
-Atalho de compile + smoke test (sobe mock se o daemon não estiver no ar):
+Compile + smoke-test shortcut (starts a mock CLI if the daemon is down):
 
 ```bash
 bash scripts/ubuntu-22.04-api.sh
-KEEP_RUNNING=1 bash scripts/ubuntu-22.04-api.sh   # deixa API e explorer rodando
+KEEP_RUNNING=1 bash scripts/ubuntu-22.04-api.sh   # leave API and explorer running
 ```
 
-## Nginx e DNS
+## Nginx and DNS
 
-As portas locais escutam só em `127.0.0.1`. Acesso externo = DNS + TLS + nginx.
+Local ports bind to `127.0.0.1` only. External access is DNS + TLS + nginx.
 
-1. Registro **A** de `server.2x2coin.com` e `serverexplorer.2x2coin.com` → IP da VPS
-2. Copie `wallet/scripts/nginx-x2x-api.conf.example` para sites-available e ative
-3. Certificado Let's Encrypt
+1. **A** records for `server.2x2coin.com` and `serverexplorer.2x2coin.com` pointing at the VPS IP
+2. Install `wallet/scripts/nginx-x2x-api.conf.example` into sites-available and enable it
+3. Let's Encrypt certificate
 
 ```bash
 sudo apt-get install -y nginx certbot python3-certbot-nginx
@@ -93,26 +93,26 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d server.2x2coin.com -d serverexplorer.2x2coin.com
 ```
 
-`proxy_pass` deve apontar para `http://127.0.0.1:50012` (API) e `http://127.0.0.1:50011` (explorer), com `proxy_read_timeout 30s`.
+`proxy_pass` must target `http://127.0.0.1:50012` (API) and `http://127.0.0.1:50011` (explorer), with `proxy_read_timeout 30s`.
 
-## Testes
+## Tests
 
-### Local (na VPS)
+### Local (on the VPS)
 
 ```bash
 curl -s http://127.0.0.1:50012/api/health
 curl -s http://127.0.0.1:50011/ext/health
 ```
 
-Esperado: `{"api":"ok","rpc":"ok"}` e `{"explorer":"ok","rpc":"ok"}`.
+Expected: `{"api":"ok","rpc":"ok"}` and `{"explorer":"ok","rpc":"ok"}`.
 
-### Externo (qualquer máquina)
+### External (any machine)
 
 ```bash
 bash scripts/test-server-external.sh
 ```
 
-Ou curls manuais:
+Or manual curls:
 
 ```bash
 curl -sS https://server.2x2coin.com/api/health
@@ -125,38 +125,38 @@ curl -sS https://serverexplorer.2x2coin.com/ext/getsummary
 curl -sS https://serverexplorer.2x2coin.com/ext/getaddress/2NHBXKyRY4ZBvyfyuZ2fZvqaGyo89vMGFW
 ```
 
-Hosts customizados: `API_BASE=https://... EXPLORER_BASE=https://... bash scripts/test-server-external.sh`.
+Custom hosts: `API_BASE=https://... EXPLORER_BASE=https://... bash scripts/test-server-external.sh`.
 
-### Sem DNS (túnel SSH)
+### No DNS yet (SSH tunnel)
 
-Não abra `50012`/`50011` no firewall. Do laptop:
+Do not open `50012`/`50011` on the firewall. From a laptop:
 
 ```bash
-ssh -L 50012:127.0.0.1:50012 -L 50011:127.0.0.1:50011 usuario@IP_DA_VPS
+ssh -L 50012:127.0.0.1:50012 -L 50011:127.0.0.1:50011 user@VPS_IP
 curl -s http://127.0.0.1:50012/api/health
 curl -s http://127.0.0.1:50011/ext/health
 ```
 
-## API da carteira (`/api/*`)
+## Wallet API (`/api/*`)
 
-Base pública: `https://server.2x2coin.com`  
-Base local: `http://127.0.0.1:50012`
+Public base: `https://server.2x2coin.com`  
+Local base: `http://127.0.0.1:50012`
 
-Endereços P2PKH mainnet começam com `2` (version `0x03`). Saldos nas respostas são string decimal em 2X2 (8 casas), não satoshis — exceto UTXOs e fee.
+Mainnet P2PKH addresses start with `2` (version `0x03`). Balance fields are 2X2 decimal strings (8 places), not satoshis — except UTXOs and fee.
 
 ### `GET /api/health`
 
-Checa se o processo está no ar e se `2x2coin-cli getblockcount` responde.
+Checks that the process is up and that `2x2coin-cli getblockcount` responds.
 
 ```json
 {"api":"ok","rpc":"ok"}
 ```
 
-Falha RPC → HTTP **502** `{"error":"..."}`.
+RPC failure → HTTP **502** `{"error":"..."}`.
 
 ### `GET /api/status`
 
-Estado do nó (`getinfo`).
+Node state (`getinfo`).
 
 ```json
 {
@@ -169,16 +169,16 @@ Estado do nó (`getinfo`).
 }
 ```
 
-| Campo | Significado |
+| Field | Meaning |
 |---|---|
-| `blocks` | altura atual |
-| `headers` | igual a `blocks` se o daemon não expuser `headers` |
-| `peers` | `connections` do `getinfo` |
-| `progress` | sempre `100.0` neste servidor |
+| `blocks` | Current height |
+| `headers` | Same as `blocks` if the daemon has no `headers` field |
+| `peers` | `connections` from `getinfo` |
+| `progress` | Always `100.0` on this server |
 
 ### `GET /api/fee`
 
-Taxa sugerida (constante `MIN_TX_FEE` / `DEFAULT_FEE_PER_KB` = 10_000 satoshis).
+Suggested fee (`MIN_TX_FEE` / `DEFAULT_FEE_PER_KB` = 10,000 satoshis).
 
 ```json
 {"feePerKbSatoshis": 10000}
@@ -186,7 +186,7 @@ Taxa sugerida (constante `MIN_TX_FEE` / `DEFAULT_FEE_PER_KB` = 10_000 satoshis).
 
 ### `GET /api/address/{addr}/balance`
 
-Saldo do endereço via indexador local. Se o índice ainda não viu o endereço e o saldo local é zero, consulta `https://explorer.2x2coin.com/ext/getbalance/{addr}` (desligável).
+Address balance from the local indexer. If the index has not seen the address yet and the local balance is zero, it queries `https://explorer.2x2coin.com/ext/getbalance/{addr}` (can be disabled).
 
 ```json
 {
@@ -199,20 +199,20 @@ Saldo do endereço via indexador local. Se o índice ainda não viu o endereço 
 }
 ```
 
-| Campo | Significado |
+| Field | Meaning |
 |---|---|
-| `balance` | 2X2 com 8 casas |
-| `scanning` | `true` se o índice ainda está varrendo |
-| `source` | `index` ou `explorer` |
-| `indexedHeight` / `chainTip` | progresso do indexador vs ponta da chain |
+| `balance` | 2X2 with 8 decimal places |
+| `scanning` | `true` while the indexer is still catching up |
+| `source` | `index` or `explorer` |
+| `indexedHeight` / `chainTip` | Indexer height vs chain tip |
 
-Cache: ~15 s (4 s se saldo zero e ainda scanning). `POST /api/cache/invalidate/{addr}` limpa o cache daquele endereço.
+Cache: ~15 s (4 s if balance is zero and still scanning). `POST /api/cache/invalidate/{addr}` clears that address.
 
-A primeira consulta de um endereço novo pode ser lenta; a sincronização completa do índice continua em segundo plano.
+The first query for a new address can be slow; full index sync continues in the background.
 
 ### `GET /api/address/{addr}/utxos`
 
-UTXOs confirmados (≥ 1 confirmação) para montar transações no celular.
+Confirmed UTXOs (≥ 1 confirmation) for building transactions on the phone.
 
 ```json
 {
@@ -229,7 +229,7 @@ UTXOs confirmados (≥ 1 confirmação) para montar transações no celular.
 
 ### `GET /api/address/{addr}/txs`
 
-Reservado para o app. Hoje devolve lista vazia:
+Reserved for the app. Currently returns an empty list:
 
 ```json
 {"transactions": []}
@@ -237,7 +237,7 @@ Reservado para o app. Hoje devolve lista vazia:
 
 ### `POST /api/tx/broadcast`
 
-Transmite hex raw assinado no celular (`sendrawtransaction`).
+Relays a raw hex transaction signed on the phone (`sendrawtransaction`).
 
 ```bash
 curl -sS -H 'Content-Type: application/json' \
@@ -249,7 +249,7 @@ curl -sS -H 'Content-Type: application/json' \
 {"txid":"..."}
 ```
 
-A transação 2x2Coin inclui o campo `nTime` (Peercoin). O servidor não assina nada.
+2x2Coin transactions include the Peercoin `nTime` field. The server does not sign anything.
 
 ### `POST /api/cache/invalidate/{addr}`
 
@@ -257,12 +257,12 @@ A transação 2x2Coin inclui o campo `nTime` (Peercoin). O servidor não assina 
 {"ok": true}
 ```
 
-## Explorer JSON (`/ext/*`)
+## JSON explorer (`/ext/*`)
 
-Base pública: `https://serverexplorer.2x2coin.com`  
-Base local: `http://127.0.0.1:50011`
+Public base: `https://serverexplorer.2x2coin.com`  
+Local base: `http://127.0.0.1:50011`
 
-Mesmo indexador e o mesmo `2x2coin-cli`. Sem HTML.
+Same indexer and the same `2x2coin-cli`. No HTML.
 
 ### `GET /ext/health`
 
@@ -272,7 +272,7 @@ Mesmo indexador e o mesmo `2x2coin-cli`. Sem HTML.
 
 ### `GET /ext/getsummary`
 
-Resumo da rede (`getinfo`).
+Network summary (`getinfo`).
 
 ```json
 {
@@ -282,11 +282,11 @@ Resumo da rede (`getinfo`).
 }
 ```
 
-`supply` vem de `moneysupply` (ou `money_supply`) do daemon.
+`supply` comes from the daemon `moneysupply` (or `money_supply`) field.
 
 ### `GET /ext/getaddress/{addr}`
 
-Saldo no formato Iquidus (compatível com o fallback do app).
+Balance in Iquidus-style fields (compatible with the app fallback).
 
 ```json
 {
@@ -295,65 +295,65 @@ Saldo no formato Iquidus (compatível com o fallback do app).
 }
 ```
 
-Os dois campos são iguais.
+Both fields are the same value.
 
-## Erros
+## Errors
 
-`Content-Type: application/json` em sucesso e em falha.
+`Content-Type: application/json` on success and failure.
 
-| HTTP | Corpo | Quando |
+| HTTP | Body | When |
 |---|---|---|
-| 404 | `{"error":"not found"}` | rota inexistente |
-| 502 | `{"error":"..."}` | `2x2coin-cli` falhou ou timeout |
-| 500 | `{"error":"..."}` | erro interno |
+| 404 | `{"error":"not found"}` | Unknown route |
+| 502 | `{"error":"..."}` | `2x2coin-cli` failed or timed out |
+| 500 | `{"error":"..."}` | Internal error |
 
-Mensagens HTML de proxy são substituídas por `upstream error (see server logs)`.
+HTML proxy pages are replaced with `upstream error (see server logs)`.
 
-## Variáveis de ambiente
+## Environment variables
 
-Os scripts `run` / `restart` / `diagnose` leem `rpcuser` / `rpcpassword` / `rpcport` de `~/.2x2coin/2x2coin.conf` (`scripts/load-rpc-env.sh`). Exports no shell têm prioridade.
+The `run` / `restart` / `diagnose` scripts read `rpcuser` / `rpcpassword` / `rpcport` from `~/.2x2coin/2x2coin.conf` (`scripts/load-rpc-env.sh`). Shell exports take precedence.
 
-| Variável | Padrão | Uso |
+| Variable | Default | Purpose |
 |---|---|---|
-| `BIND_HOST` | `127.0.0.1` | bind HTTP |
-| `PORT` | `50012` | porta da API |
-| `EXPLORER_PORT` | `50011` | porta do explorer |
-| `X2X_CLI` | `2x2coin-cli` | binário do cliente |
+| `BIND_HOST` | `127.0.0.1` | HTTP bind address |
+| `PORT` | `50012` | API port |
+| `EXPLORER_PORT` | `50011` | Explorer port |
+| `X2X_CLI` | `2x2coin-cli` | CLI binary |
 | `X2X_RPC_HOST` | `127.0.0.1` | `-rpcconnect` |
 | `X2X_RPC_PORT` | `15189` | `-rpcport` |
-| `X2X_RPC_USER` / `X2X_RPC_PASSWORD` | do conf | credenciais CLI |
+| `X2X_RPC_USER` / `X2X_RPC_PASSWORD` | from conf | CLI credentials |
 | `X2XCOIN_CONF` | `~/.2x2coin/2x2coin.conf` | `-conf` |
-| `X2X_DATADIR` | vazio | `-datadir` |
-| `RPC_TIMEOUT_SECONDS` | `8` | timeout por chamada CLI |
-| `INDEX_DIR` | `~/.x2x-wallet-index` | pasta do índice |
-| `INDEX_START_HEIGHT` | `0` | bloco inicial da sync completa |
-| `INDEX_FAST_LOOKBACK_WINDOWS` | `30,60,120` | janelas rápidas (blocos) |
-| `INDEX_FAST_BUDGET_MS` | `6000` | orçamento da consulta rápida |
-| `INDEX_LOOKBACK_WINDOWS` | `200,500,1000,2000` | varredura profunda |
-| `INDEX_QUERY_BUDGET_MS` | `60000` | orçamento da varredura profunda |
-| `EXPLORER_FALLBACK_ENABLED` | `true` | usa explorer público se saldo local = 0 |
-| `EXPLORER_FALLBACK_URL` | `https://explorer.2x2coin.com` | base do fallback |
+| `X2X_DATADIR` | empty | `-datadir` |
+| `RPC_TIMEOUT_SECONDS` | `8` | Timeout per CLI call |
+| `INDEX_DIR` | `~/.x2x-wallet-index` | Index directory |
+| `INDEX_START_HEIGHT` | `0` | First block of the full sync |
+| `INDEX_FAST_LOOKBACK_WINDOWS` | `30,60,120` | Fast lookback windows (blocks) |
+| `INDEX_FAST_BUDGET_MS` | `6000` | Fast query budget |
+| `INDEX_LOOKBACK_WINDOWS` | `200,500,1000,2000` | Deep scan windows |
+| `INDEX_QUERY_BUDGET_MS` | `60000` | Deep scan budget |
+| `EXPLORER_FALLBACK_ENABLED` | `true` | Use the public explorer when local balance is 0 |
+| `EXPLORER_FALLBACK_URL` | `https://explorer.2x2coin.com` | Fallback base URL |
 
-## Indexador
+## Indexer
 
-A API **não** usa `getreceivedbyaddress` / `listunspent` do daemon (esses RPCs só veem endereços da carteira do nó). O `ChainIndexer` varre blocos, persiste UTXOs em `INDEX_DIR` e atende `/api/address/...`.
+The API does **not** use daemon `getreceivedbyaddress` / `listunspent` (those RPCs only see the node wallet). `ChainIndexer` scans blocks, stores UTXOs in `INDEX_DIR`, and serves `/api/address/...`.
 
-1. Consulta rápida (lookback curto)
-2. Se saldo 0, tenta o explorer público
-3. Sync completa em background até `chainTip`
+1. Fast query (short lookback)
+2. If balance is 0, try the public explorer
+3. Full background sync until `chainTip`
 
-## Diagnóstico
+## Troubleshooting
 
-| Sintoma | Causa |
+| Symptom | Cause |
 |---|---|
-| `Could not resolve host` | falta registro A no DNS |
-| timeout / `Connection refused` na `:443` | nginx parado, firewall ou IP errado |
-| `502` / `504` no HTTPS, local ok | `proxy_pass` na porta errada ou timeout nginx |
-| `2x2coin-cli ... authorization failed` | user/senha diferentes do daemon |
-| `failed to start 2x2coin-cli` | binário fora do PATH — defina `X2X_CLI` |
-| `Connection refused` no RPC `15189` | `2x2coind` parado ou `server=1` ausente |
-| saldo `0` com `scanning: true` | índice ainda atrás; aguarde ou veja fallback |
-| `Server Error` texto puro | build antigo; `git pull` + `restart-server-services.sh` |
+| `Could not resolve host` | Missing DNS A record |
+| timeout / `Connection refused` on `:443` | nginx down, firewall, or wrong IP |
+| HTTPS `502` / `504`, local OK | Wrong `proxy_pass` port or nginx timeout |
+| `2x2coin-cli ... authorization failed` | User/password mismatch with the daemon |
+| `failed to start 2x2coin-cli` | Binary not on `PATH` — set `X2X_CLI` |
+| `Connection refused` on RPC `15189` | `2x2coind` down or missing `server=1` |
+| balance `0` with `scanning: true` | Index still catching up; wait or check fallback |
+| Plain-text `Server Error` | Old build; `git pull` + `restart-server-services.sh` |
 
 ```bash
 bash scripts/diagnose-server.sh
@@ -361,8 +361,8 @@ tail -n 80 logs/x2x-api.log
 tail -n 80 logs/x2x-explorer.log
 ```
 
-## Relação com o app Android
+## Android app
 
-O cliente (`x2x-api`) chama estas URLs. TLS pinning no APK ainda está vazio até os hosts de produção terem certificado estável. Ver [DEVELOPER.md](DEVELOPER.md) e [USER_MANUAL.md](USER_MANUAL.md).
+The client (`x2x-api`) calls these URLs. TLS pinning in the APK is still empty until the production hosts have a stable certificate. See [DEVELOPER.md](DEVELOPER.md) and [USER_MANUAL.md](USER_MANUAL.md).
 
-Instalação completa (JDK, APK, keystore): [INSTALLATION.md](INSTALLATION.md). Arquitetura dos módulos: [ARCHITECTURE.md](ARCHITECTURE.md).
+Full install (JDK, APK, keystore): [INSTALLATION.md](INSTALLATION.md). Module layout: [ARCHITECTURE.md](ARCHITECTURE.md).

@@ -1,6 +1,6 @@
 # Manual de Instalação
 
-Referência da API JSON e do explorer (endpoints, JSON, start/stop, testes): **[SERVER.md](SERVER.md)**.
+JSON API and explorer reference (endpoints, JSON, start/stop, tests): **[SERVER.md](SERVER.md)**.
 
 ## Requisitos
 
