@@ -1,5 +1,7 @@
 # Manual de Instalação
 
+Referência da API JSON e do explorer (endpoints, JSON, start/stop, testes): **[SERVER.md](SERVER.md)**.
+
 ## Requisitos
 
 - Ubuntu 22.04+

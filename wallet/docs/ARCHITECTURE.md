@@ -58,6 +58,8 @@ Scripts: `scripts/build-server-services.sh`, `scripts/run-server-services.sh`
 
 O `x2x-server` não abre HTTP RPC no daemon: cada consulta é `2x2coin-cli <metodo> [params]`.
 
+Manual operacional e contrato JSON: [SERVER.md](SERVER.md).
+
 ### `x2x-android`
 - Activity única + fragments
 - Bottom navigation: Início, Enviar, Receber, Carteiras, Config
