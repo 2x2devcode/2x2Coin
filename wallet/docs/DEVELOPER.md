@@ -100,7 +100,7 @@ A primeira consulta pode levar alguns minutos enquanto o indice varre os blocos 
 
 ## Endpoints REST esperados
 
-Contrato completo (exemplos JSON, erros, variáveis): [SERVER.md](SERVER.md).
+Full contract (JSON examples, errors, environment variables): [SERVER.md](SERVER.md).
 
 ### API oficial (`https://server.2x2coin.com` -> `127.0.0.1:50012`)
 
