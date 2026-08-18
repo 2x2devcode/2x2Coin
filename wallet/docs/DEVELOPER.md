@@ -99,7 +99,7 @@ A primeira consulta pode levar alguns minutos enquanto o indice varre os blocos 
 
 ## Endpoints REST esperados
 
-### API oficial (`https://server.2x2coin.com` -> `127.0.0.1:40012`)
+### API oficial (`https://server.2x2coin.com` -> `127.0.0.1:50012`)
 
 | Método | Path |
 |---|---|
@@ -111,7 +111,7 @@ A primeira consulta pode levar alguns minutos enquanto o indice varre os blocos 
 | POST | `/api/tx/broadcast` |
 | POST | `/api/cache/invalidate/{addr}` |
 
-### Explorer JSON (`https://serverexplorer.2x2coin.com` -> `127.0.0.1:40061`, sem interface web)
+### Explorer JSON (`https://serverexplorer.2x2coin.com` -> `127.0.0.1:50011`, sem interface web)
 
 | Método | Path |
 |---|---|

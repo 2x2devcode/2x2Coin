@@ -6,8 +6,8 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/scripts/load-rpc-env.sh"
 
 BIND_HOST="${BIND_HOST:-127.0.0.1}"
-API_PORT="${API_PORT:-40012}"
-EXPLORER_PORT="${EXPLORER_PORT:-40061}"
+API_PORT="${API_PORT:-50012}"
+EXPLORER_PORT="${EXPLORER_PORT:-50011}"
 LOG_DIR="${LOG_DIR:-${ROOT_DIR}/logs}"
 PID_DIR="${PID_DIR:-${ROOT_DIR}/.run}"
 

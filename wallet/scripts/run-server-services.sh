@@ -6,8 +6,8 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/scripts/load-rpc-env.sh"
 
 BIND_HOST="${BIND_HOST:-127.0.0.1}"
-API_PORT="${API_PORT:-40012}"
-EXPLORER_PORT="${EXPLORER_PORT:-40061}"
+API_PORT="${API_PORT:-50012}"
+EXPLORER_PORT="${EXPLORER_PORT:-50011}"
 
 if ! command -v "${X2X_CLI}" >/dev/null 2>&1; then
   echo "ERRO: ${X2X_CLI} nao encontrado no PATH."

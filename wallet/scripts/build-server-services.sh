@@ -5,8 +5,8 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT_DIR"
 
 BIND_HOST="${BIND_HOST:-127.0.0.1}"
-API_PORT="${API_PORT:-40012}"
-EXPLORER_PORT="${EXPLORER_PORT:-40061}"
+API_PORT="${API_PORT:-50012}"
+EXPLORER_PORT="${EXPLORER_PORT:-50011}"
 
 echo "Compilando API e explorer (bind local ${BIND_HOST})..."
 ./gradlew :x2x-server:installDist

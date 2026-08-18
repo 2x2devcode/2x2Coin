@@ -4,8 +4,8 @@ set -euo pipefail
 # shellcheck source=load-rpc-env.sh
 source "$(cd "$(dirname "$0")" && pwd)/load-rpc-env.sh"
 
-API_PORT="${API_PORT:-40012}"
-EXPLORER_PORT="${EXPLORER_PORT:-40061}"
+API_PORT="${API_PORT:-50012}"
+EXPLORER_PORT="${EXPLORER_PORT:-50011}"
 BIND_HOST="${BIND_HOST:-127.0.0.1}"
 CONF="${X2XCOIN_CONF:-${HOME}/.2x2coin/2x2coin.conf}"
 

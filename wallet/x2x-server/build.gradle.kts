@@ -27,7 +27,7 @@ tasks.test {
 
 tasks.register<JavaExec>("runApi") {
     group = "application"
-    description = "Run official JSON API on 127.0.0.1:40012"
+    description = "Run official JSON API on 127.0.0.1:50012"
     classpath = sourceSets["main"].runtimeClasspath
     mainClass.set("com.x2xcoin.wallet.server.X2xServer")
     standardInput = System.`in`
