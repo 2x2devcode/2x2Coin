@@ -77,4 +77,14 @@ bash scripts/stop-server-services.sh      # para API (50012) e explorer (50011)
 | Explorer JSON | `https://serverexplorer.2x2coin.com` | `127.0.0.1:50011` | `/ext/*` |
 | Explorer público (fallback) | `https://explorer.2x2coin.com` | — | `/ext/getsummary`, `/ext/getbalance/{addr}` |
 
+Teste local (na VPS) e externo (HTTPS, de qualquer máquina):
+
+```bash
+curl -s http://127.0.0.1:50012/api/health
+curl -s http://127.0.0.1:50011/ext/health
+bash scripts/test-server-external.sh
+```
+
+As portas `50012`/`50011` não são públicas. Fora da VPS use `https://server.2x2coin.com` e `https://serverexplorer.2x2coin.com` (nginx + DNS). Detalhes: [INSTALLATION.md](docs/INSTALLATION.md#4-testar-de-fora-da-vps).
+
 Documentação: [INSTALLATION.md](docs/INSTALLATION.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [DEVELOPER.md](docs/DEVELOPER.md).

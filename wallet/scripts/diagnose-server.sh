@@ -133,3 +133,4 @@ echo ""
 
 echo "6) Se o passo 5 for OK mas https://server.2x2coin.com der 504,"
 echo "   o problema e nginx/proxy — confirme proxy_pass http://127.0.0.1:${API_PORT};"
+echo "   Teste HTTPS de fora da VPS: bash scripts/test-server-external.sh"
