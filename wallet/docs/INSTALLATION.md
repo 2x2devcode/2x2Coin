@@ -63,6 +63,14 @@ git pull origin main
 bash scripts/restart-server-services.sh
 ```
 
+Para parar API e explorer:
+
+```bash
+bash scripts/stop-server-services.sh
+```
+
+O script mata os PIDs em `wallet/.run/` e, se ainda houver processo nas portas `50012`/`50011`, encerra quem estiver escutando. Nao para o daemon `2x2coind`.
+
 Para teste interativo (encerra ao pressionar Ctrl+C):
 
 ```bash

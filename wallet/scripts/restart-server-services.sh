@@ -11,43 +11,6 @@ EXPLORER_PORT="${EXPLORER_PORT:-50011}"
 LOG_DIR="${LOG_DIR:-${ROOT_DIR}/logs}"
 PID_DIR="${PID_DIR:-${ROOT_DIR}/.run}"
 
-stop_port() {
-  local port=$1
-  local label=$2
-  if command -v fuser >/dev/null 2>&1; then
-    if fuser -n tcp "${port}" >/dev/null 2>&1; then
-      echo "Encerrando ${label} na porta ${port}..."
-      fuser -k -n tcp "${port}" >/dev/null 2>&1 || true
-      sleep 1
-    fi
-    return
-  fi
-  if command -v lsof >/dev/null 2>&1; then
-    local pids
-    pids="$(lsof -ti tcp:"${port}" -sTCP:LISTEN 2>/dev/null || true)"
-    if [[ -n "${pids}" ]]; then
-      echo "Encerrando ${label} na porta ${port} (PID ${pids})..."
-      kill ${pids} 2>/dev/null || true
-      sleep 1
-    fi
-  fi
-}
-
-stop_pid_file() {
-  local pid_file=$1
-  local label=$2
-  if [[ -f "${pid_file}" ]]; then
-    local pid
-    pid="$(cat "${pid_file}")"
-    if kill -0 "${pid}" 2>/dev/null; then
-      echo "Encerrando ${label} (PID ${pid})..."
-      kill "${pid}" 2>/dev/null || true
-      sleep 1
-    fi
-    rm -f "${pid_file}"
-  fi
-}
-
 if ! command -v "${X2X_CLI}" >/dev/null 2>&1; then
   echo "ERRO: ${X2X_CLI} nao encontrado no PATH."
   echo "Instale 2x2coin-cli ou defina X2X_CLI=/caminho/2x2coin-cli"
@@ -57,10 +20,8 @@ fi
 echo "=== Reiniciando servicos 2x2Coin ==="
 echo ""
 
-stop_pid_file "${PID_DIR}/x2x-api.pid" "API"
-stop_pid_file "${PID_DIR}/x2x-explorer.pid" "Explorer"
-stop_port "${API_PORT}" "API"
-stop_port "${EXPLORER_PORT}" "Explorer"
+BIND_HOST="${BIND_HOST}" API_PORT="${API_PORT}" EXPLORER_PORT="${EXPLORER_PORT}" PID_DIR="${PID_DIR}" \
+  bash "$ROOT_DIR/scripts/stop-server-services.sh"
 
 echo "Compilando API e explorer..."
 "$ROOT_DIR/scripts/build-server-services.sh"
