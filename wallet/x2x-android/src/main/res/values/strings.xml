@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">2x2 Wallet</string>
+    <color name="x2x_green">#5EAE4C</color>
+    <color name="x2x_background">#0B1118</color>
+    <color name="x2x_surface">#15202B</color>
+    <color name="x2x_text">#EAF4FF</color>
+    <color name="x2x_muted">#7A95B0</color>
+</resources>

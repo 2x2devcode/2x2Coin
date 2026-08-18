@@ -662,6 +662,50 @@ UniValue getblock(const UniValue& params, bool fHelp)
     return blockToJSON(block, pblockindex);
 }
 
+UniValue getblockbynumber(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() < 1 || params.size() > 2)
+        throw runtime_error(
+            "getblockbynumber height ( verbose )\n"
+            "\nReturns a block for the given height. When verbose is true (default),\n"
+            "the result includes full transaction objects so wallet indexers can scan\n"
+            "addresses without requiring -txindex.\n"
+            "\nArguments:\n"
+            "1. height            (numeric, required) The block height\n"
+            "2. verbose           (boolean, optional, default=true) true for a json object with tx details, false for hex\n"
+            "\nResult (for verbose = true):\n"
+            "Block object as in getblock, with \"tx\" as an array of transaction objects.\n"
+            "\nExamples:\n"
+            + HelpExampleCli("getblockbynumber", "1000")
+            + HelpExampleRpc("getblockbynumber", "1000, true")
+        );
+
+    LOCK(cs_main);
+
+    int nHeight = params[0].get_int();
+    if (nHeight < 0 || nHeight > chainActive.Height())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Block height out of range");
+
+    CBlockIndex* pblockindex = chainActive[nHeight];
+    CBlock block;
+    if (!ReadBlockFromDisk(block, pblockindex, Params().GetConsensus()))
+        throw JSONRPCError(RPC_INTERNAL_ERROR, "Can't read block from disk");
+
+    bool fVerbose = true;
+    if (params.size() > 1)
+        fVerbose = params[1].get_bool();
+
+    if (!fVerbose)
+    {
+        CDataStream ssBlock(SER_NETWORK, PROTOCOL_VERSION | RPCSerializationFlags());
+        ssBlock << block;
+        std::string strHex = HexStr(ssBlock.begin(), ssBlock.end());
+        return strHex;
+    }
+
+    return blockToJSON(block, pblockindex, true);
+}
+
 struct CCoinsStats
 {
     int nHeight;
@@ -1244,6 +1288,7 @@ static const CRPCCommand commands[] =
     { "blockchain",         "getbestblockhash",       &getbestblockhash,       true  },
     { "blockchain",         "getblockcount",          &getblockcount,          true  },
     { "blockchain",         "getblock",               &getblock,               true  },
+    { "blockchain",         "getblockbynumber",       &getblockbynumber,       true  },
     { "blockchain",         "getblockhash",           &getblockhash,           true  },
     { "blockchain",         "getblockheader",         &getblockheader,         true  },
     { "blockchain",         "getchaintips",           &getchaintips,           true  },

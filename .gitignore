@@ -136,8 +136,16 @@ contrib/devtools/split-debug.sh
 .vscode/*
 .vs/*
 
-# clang-check
-*.plist
+# Gradle / wallet API
+wallet/.gradle/
+wallet/**/build/
+wallet/local.properties
+wallet/.run/
+wallet/release/
+wallet/*.jks
+wallet/*.keystore
+wallet/keystore.properties
+
 
 osx_volname
 dist/
