@@ -83,7 +83,7 @@ GitHub Repository
 
 ## Wallet API (VPS + Android)
 
-A pasta [`wallet/`](wallet/) contém a API JSON para carteira Android (mesmo modelo do InfiniteRicks-new):
+A pasta [`wallet/`](wallet/) contém a API JSON para carteira Android. O processo na VPS chama `2x2coin-cli` para falar com o nó:
 
 ```bash
 bash scripts/ubuntu-22.04-api.sh

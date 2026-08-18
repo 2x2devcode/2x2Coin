@@ -45,7 +45,7 @@ sleep 2
 2x2coind -daemon
 ```
 
-Os scripts `run-server-services.sh` e `diagnose-server.sh` leem automaticamente `rpcuser` e `rpcpassword` desse arquivo.
+Confirme que `2x2coin-cli getinfo` funciona na VPS. A API JSON chama esse binário (não abre HTTP RPC por conta própria). Os scripts leem `rpcuser`/`rpcpassword` de `~/.2x2coin/2x2coin.conf` e passam para o CLI.
 
 ## 3. Subir API e explorer (mesmo servidor)
 
@@ -156,9 +156,10 @@ Causas comuns:
 
 | Sintoma | Causa |
 |---|---|
-| `RPC HTTP 401` | `X2X_RPC_USER` / `X2X_RPC_PASSWORD` diferentes do daemon |
-| `Connection refused` na porta 15189 | `2x2coind` nao esta rodando ou `server=1` ausente |
-| `502` com mensagem RPC | API/explorer rodando, mas RPC inacessivel |
+| `2x2coin-cli ... authorization failed` | `X2X_RPC_USER` / `X2X_RPC_PASSWORD` diferentes do daemon, ou `2x2coin-cli` ausente |
+| `failed to start 2x2coin-cli` | binario nao esta no PATH — defina `X2X_CLI=/usr/local/bin/2x2coin-cli` |
+| `Connection refused` / CLI error | `2x2coind` nao esta rodando ou `server=1` ausente |
+| `502` com mensagem do CLI | API/explorer rodando, mas `2x2coin-cli` nao consegue falar com o daemon |
 | `Server Error` (texto puro) | Versao antiga sem tratamento JSON — atualize com `git pull` |
 
 Teste local antes do HTTPS:

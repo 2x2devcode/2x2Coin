@@ -24,7 +24,7 @@ class WalletApiSmokeTest {
         System.setProperty("x2x.index.dir", indexDir.toString());
         try (MockRpcServer mock = new MockRpcServer("127.0.0.1", 0, "x2xrpc", "secret")) {
             mock.start();
-            RpcClient rpcClient = new RpcClient(mock.host(), mock.port(), "x2xrpc", "secret");
+            RpcClient rpcClient = new RpcClient(RpcClient.mockCliCommand(), mock.host(), mock.port(), "x2xrpc", "secret");
             AddressQueryService addressQuery = new AddressQueryService(
                     rpcClient,
                     ChainIndexer.open(),

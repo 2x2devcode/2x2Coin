@@ -15,10 +15,23 @@ read_conf_user() {
 
 rpc_call() {
   local method=$1
-  curl -sS --user "${X2X_RPC_USER}:${X2X_RPC_PASSWORD}" \
-    --data "{\"jsonrpc\":\"1.0\",\"id\":1,\"method\":\"${method}\",\"params\":[]}" \
-    -H 'content-type: application/json' \
-    "http://${X2X_RPC_HOST}:${X2X_RPC_PORT}/"
+  local cli=("${X2X_CLI}")
+  if [[ -n "${X2X_RPC_HOST:-}" ]]; then
+    cli+=("-rpcconnect=${X2X_RPC_HOST}")
+  fi
+  if [[ -n "${X2X_RPC_PORT:-}" ]]; then
+    cli+=("-rpcport=${X2X_RPC_PORT}")
+  fi
+  if [[ -n "${X2X_RPC_USER:-}" ]]; then
+    cli+=("-rpcuser=${X2X_RPC_USER}")
+  fi
+  if [[ -n "${X2X_RPC_PASSWORD:-}" ]]; then
+    cli+=("-rpcpassword=${X2X_RPC_PASSWORD}")
+  fi
+  if [[ -f "$CONF" ]]; then
+    cli+=("-conf=${CONF}")
+  fi
+  "${cli[@]}" "${method}"
 }
 
 echo "=== Diagnostico 2x2Coin ==="
@@ -37,7 +50,7 @@ else
   echo "   FALHA: arquivo nao encontrado"
   CONF_USER=""
 fi
-echo "   Credencial em uso: user=${X2X_RPC_USER:-?} host=${X2X_RPC_HOST}:${X2X_RPC_PORT}"
+echo "   CLI: ${X2X_CLI} -> ${X2X_RPC_HOST}:${X2X_RPC_PORT} user=${X2X_RPC_USER:-<conf/cookie>}"
 if [[ -n "${CONF_USER}" && "${X2X_RPC_USER:-}" != "${CONF_USER}" ]]; then
   echo "   AVISO: usuario em uso difere do conf (remova export X2X_RPC_USER antigo do shell)"
 fi
@@ -51,20 +64,18 @@ else
 fi
 echo ""
 
-echo "2) JSON-RPC getinfo"
-if [[ -z "${X2X_RPC_USER:-}" || -z "${X2X_RPC_PASSWORD:-}" ]]; then
-  echo "   FALHA: credenciais RPC ausentes no conf"
+echo "2) 2x2coin-cli getinfo"
+if ! command -v "${X2X_CLI}" >/dev/null 2>&1; then
+  echo "   FALHA: ${X2X_CLI} nao encontrado no PATH"
 else
   RPC_RESULT="$(rpc_call getinfo 2>&1 || true)"
-  if echo "$RPC_RESULT" | grep -qi '401 Unauthorized'; then
-    echo "   FALHA: 401 Unauthorized"
-    echo "   Confirme que rpcuser no conf comeca com o valor exato (ex: userZDNNJMGs27t6Mq2)"
+  if echo "$RPC_RESULT" | grep -qi 'authorization failed\|incorrect rpcuser'; then
+    echo "   FALHA: autenticacao RPC"
+    echo "   Confirme rpcuser/rpcpassword em ~/.2x2coin/2x2coin.conf"
     echo "   Reinicie o daemon apos editar o conf:"
     echo "     2x2coind stop ; sleep 2 ; 2x2coind -daemon"
-  elif echo "$RPC_RESULT" | grep -q '"result"'; then
+  elif echo "$RPC_RESULT" | grep -q '"blocks"\|blocks'; then
     echo "   OK: $(echo "$RPC_RESULT" | head -c 300)"
-  elif echo "$RPC_RESULT" | grep -q '"error"'; then
-    echo "   FALHA: $RPC_RESULT"
   else
     echo "   Resposta: $RPC_RESULT"
   fi

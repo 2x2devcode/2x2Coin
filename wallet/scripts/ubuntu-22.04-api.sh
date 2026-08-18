@@ -5,7 +5,7 @@
 #   bash wallet/scripts/ubuntu-22.04-api.sh
 #
 # The script installs JDK 17 if needed, compiles x2x-server, runs tests,
-# then starts a mock JSON-RPC (or uses a live 2x2coind) plus the API/explorer.
+# then talks to the node through 2x2coin-cli (or mock-2x2coin-cli.sh).
 
 set -euo pipefail
 
@@ -75,11 +75,12 @@ source "$WALLET_DIR/scripts/load-rpc-env.sh"
 USE_MOCK=0
 if [[ "${X2X_FORCE_MOCK:-}" == "1" ]]; then
   USE_MOCK=1
-elif [[ -z "${X2X_RPC_USER:-}" || -z "${X2X_RPC_PASSWORD:-}" ]]; then
+elif ! command -v "${X2X_CLI}" >/dev/null 2>&1; then
   USE_MOCK=1
-elif ! curl -sf --max-time 2 "http://${X2X_RPC_HOST}:${X2X_RPC_PORT}/" >/dev/null 2>&1; then
-  # Daemon may still be up but reject GET; probe with a tiny POST later.
-  :
+elif ! "${X2X_CLI}" ${X2X_RPC_HOST:+-rpcconnect="$X2X_RPC_HOST"} ${X2X_RPC_PORT:+-rpcport="$X2X_RPC_PORT"} \
+      ${X2X_RPC_USER:+-rpcuser="$X2X_RPC_USER"} ${X2X_RPC_PASSWORD:+-rpcpassword="$X2X_RPC_PASSWORD"} \
+      getblockcount >/dev/null 2>&1; then
+  USE_MOCK=1
 fi
 
 MOCK_PID=""
@@ -97,22 +98,25 @@ INDEX_DIR="${INDEX_DIR:-$WALLET_DIR/.run/x2x-wallet-index}"
 mkdir -p "$INDEX_DIR" "$WALLET_DIR/.run"
 
 if [[ "$USE_MOCK" -eq 1 ]]; then
-  echo "3) Daemon 2x2coind nao configurado — subindo MockRpcServer em ${BIND_HOST}:${MOCK_RPC_PORT}"
+  echo "3) 2x2coin-cli/daemon indisponivel — subindo MockRpcServer + mock-2x2coin-cli"
   export X2X_RPC_HOST="${BIND_HOST}"
   export X2X_RPC_PORT="${MOCK_RPC_PORT}"
   export X2X_RPC_USER="${X2X_RPC_USER:-x2xrpc}"
   export X2X_RPC_PASSWORD="${X2X_RPC_PASSWORD:-x2xrpc}"
   export EXPLORER_FALLBACK_ENABLED="${EXPLORER_FALLBACK_ENABLED:-false}"
+  export X2X_SERVER_LIB="$LIB_DIR"
+  export X2X_CLI="$WALLET_DIR/scripts/mock-2x2coin-cli.sh"
+  chmod +x "$X2X_CLI"
   nohup java -cp "$LIB_DIR/*" com.x2xcoin.wallet.server.MockRpcServer \
     >"$WALLET_DIR/.run/x2x-mock-rpc.log" 2>&1 &
   MOCK_PID=$!
   sleep 1
 else
-  echo "3) Usando 2x2coind em ${X2X_RPC_HOST}:${X2X_RPC_PORT} (user=${X2X_RPC_USER})"
+  echo "3) Usando ${X2X_CLI} -> ${X2X_RPC_HOST}:${X2X_RPC_PORT}"
 fi
 
 export BIND_HOST INDEX_DIR EXPLORER_FALLBACK_ENABLED
-export X2X_RPC_HOST X2X_RPC_PORT X2X_RPC_USER X2X_RPC_PASSWORD
+export X2X_CLI X2X_SERVER_LIB X2X_RPC_HOST X2X_RPC_PORT X2X_RPC_USER X2X_RPC_PASSWORD X2XCOIN_CONF X2X_DATADIR
 
 echo "4) Iniciando API ${BIND_HOST}:${API_PORT} e explorer ${BIND_HOST}:${EXPLORER_PORT}..."
 nohup env PORT="$API_PORT" java -cp "$LIB_DIR/*" com.x2xcoin.wallet.server.X2xServer \

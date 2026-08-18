@@ -26,7 +26,8 @@ flowchart TB
   API --> Pin
   API --> Server
   API --> Explorer
-  Server --> Daemon[2x2Coin JSON-RPC]
+  Server --> Cli[2x2coin-cli]
+  Cli --> Daemon[2x2coind]
 ```
 
 ## Módulos
@@ -55,11 +56,13 @@ Dois processos JSON (sem interface web) no mesmo servidor:
 
 Scripts: `scripts/build-server-services.sh`, `scripts/run-server-services.sh`
 
+O `x2x-server` não abre HTTP RPC no daemon: cada consulta é `2x2coin-cli <metodo> [params]`.
+
 ### `x2x-android`
 - Activity única + fragments
 - Bottom navigation: Início, Enviar, Receber, Carteiras, Config
 - Senha local + armazenamento criptografado
-- Pin da chave pública TLS oculto em `rickpin` (JNI + XOR)
+- Pin da chave pública TLS oculto em `x2xpin` (JNI + XOR)
 
 ## Fluxos
 

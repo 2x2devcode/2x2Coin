@@ -48,8 +48,9 @@ stop_pid_file() {
   fi
 }
 
-if [[ -z "${X2X_RPC_USER:-}" || -z "${X2X_RPC_PASSWORD:-}" ]]; then
-  echo "ERRO: credenciais RPC nao encontradas em ~/.2x2coin/2x2coin.conf"
+if ! command -v "${X2X_CLI}" >/dev/null 2>&1; then
+  echo "ERRO: ${X2X_CLI} nao encontrado no PATH."
+  echo "Instale 2x2coin-cli ou defina X2X_CLI=/caminho/2x2coin-cli"
   exit 1
 fi
 
@@ -67,7 +68,7 @@ echo "Compilando API e explorer..."
 LIB_DIR="${ROOT_DIR}/x2x-server/build/install/x2x-server/lib"
 mkdir -p "${LOG_DIR}" "${PID_DIR}"
 
-export BIND_HOST X2X_RPC_HOST X2X_RPC_PORT X2X_RPC_USER X2X_RPC_PASSWORD
+export BIND_HOST X2X_CLI X2X_RPC_HOST X2X_RPC_PORT X2X_RPC_USER X2X_RPC_PASSWORD X2XCOIN_CONF X2X_DATADIR
 
 echo "Iniciando API em ${BIND_HOST}:${API_PORT}..."
 nohup env PORT="${API_PORT}" java -cp "${LIB_DIR}/*" com.x2xcoin.wallet.server.X2xServer \

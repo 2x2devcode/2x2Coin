@@ -12,7 +12,7 @@ class MockRpcServerTest {
     void answersWalletIndexerRpcs() throws Exception {
         try (MockRpcServer mock = new MockRpcServer("127.0.0.1", 0, "x2xrpc", "secret")) {
             mock.start();
-            RpcClient client = new RpcClient(mock.host(), mock.port(), "x2xrpc", "secret");
+            RpcClient client = new RpcClient(RpcClient.mockCliCommand(), mock.host(), mock.port(), "x2xrpc", "secret");
             assertEquals(1, client.call("getblockcount", new JsonArray()).getAsInt());
             JsonObject info = client.call("getinfo", new JsonArray()).getAsJsonObject();
             assertEquals(8, info.get("connections").getAsInt());

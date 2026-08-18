@@ -2,7 +2,7 @@
 
 API JSON para a carteira Android **não-custodial** da moeda **2x2Coin (2X2)**, no mesmo modelo do [InfiniteRicks-new](https://github.com/2x2devcode/InfiniteRicks-new).
 
-O servidor instala em uma VPS Linux, fala JSON-RPC com `2x2coind` e expõe `/api/*` para o aplicativo. As chaves privadas nunca saem do celular.
+O servidor instala em uma VPS Linux, chama **`2x2coin-cli`** (o mesmo cliente do daemon) e expõe `/api/*` para o aplicativo. As chaves privadas nunca saem do celular.
 
 ## Módulos
 
@@ -54,7 +54,7 @@ Para deixar os serviços rodando após o smoke test:
 KEEP_RUNNING=1 bash scripts/ubuntu-22.04-api.sh
 ```
 
-Com `2x2coind` já sincronizado e `~/.2x2coin/2x2coin.conf` configurado, o script usa o daemon real em vez do mock.
+Com `2x2coind` já sincronizado, `2x2coin-cli` no PATH e `~/.2x2coin/2x2coin.conf` configurado, o script usa o CLI real. Sem daemon, sobe `MockRpcServer` e `scripts/mock-2x2coin-cli.sh` (mesmos argumentos do `2x2coin-cli`).
 
 ## VPS com daemon real
 

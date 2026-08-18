@@ -20,6 +20,7 @@ read_conf_value() {
 }
 
 export X2X_RPC_HOST="${X2X_RPC_HOST:-127.0.0.1}"
+export X2X_CLI="${X2X_CLI:-2x2coin-cli}"
 
 if [[ -f "$CONF" ]]; then
   if port="$(read_conf_value rpcport)"; then
