@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/x2x_background"
+    android:orientation="vertical"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
+    android:paddingBottom="20dp"
+    android:paddingTop="100dp">
+
+    <Button
+        android:id="@+id/addWalletButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:backgroundTint="@color/x2x_green"
+        android:text="Gerar novo endereço" />
+
+    <Button
+        android:id="@+id/exportWifButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:backgroundTint="@color/x2x_surface"
+        android:text="Exportar WIF da conta ativa" />
+
+    <TextView
+        android:id="@+id/walletList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:textColor="@color/x2x_text" />
+</LinearLayout>
