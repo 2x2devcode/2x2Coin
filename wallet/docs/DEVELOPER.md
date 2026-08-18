@@ -93,6 +93,7 @@ Apos atualizar o servidor na VPS:
 ```bash
 bash scripts/run-server-services.sh
 curl -s https://server.2x2coin.com/api/address/2NHBXKyRY4ZBvyfyuZ2fZvqaGyo89vMGFW/balance
+bash scripts/test-server-external.sh
 ```
 
 A primeira consulta pode levar alguns minutos enquanto o indice varre os blocos recentes; a sincronizacao completa continua em segundo plano.
