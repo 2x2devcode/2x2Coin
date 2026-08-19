@@ -100,7 +100,9 @@ A primeira consulta pode levar alguns minutos enquanto o indice varre os blocos 
 
 ## Endpoints REST esperados
 
-Full contract (JSON examples, errors, environment variables): [SERVER.md](SERVER.md).
+How the Android app consumes these hosts without VPS access (curl cookbook): [APP_API.md](APP_API.md).
+
+Full operator contract (JSON examples, errors, environment variables): [SERVER.md](SERVER.md).
 
 ### API oficial (`https://server.2x2coin.com` -> `127.0.0.1:50012`)
 

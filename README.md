@@ -89,7 +89,9 @@ A pasta [`wallet/`](wallet/) contém a API JSON para carteira Android. O process
 bash scripts/ubuntu-22.04-api.sh
 ```
 
-Local services: `http://127.0.0.1:50012/api/*` and `http://127.0.0.1:50011/ext/*`. Manual: [wallet/docs/SERVER.md](wallet/docs/SERVER.md).
+Local services: `http://127.0.0.1:50012/api/*` and `http://127.0.0.1:50011/ext/*`.
+App developer (public HTTPS): [wallet/docs/APP_API.md](wallet/docs/APP_API.md).
+Operator: [wallet/docs/SERVER.md](wallet/docs/SERVER.md).
 
 📝 License
 
