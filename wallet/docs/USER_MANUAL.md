@@ -1,64 +1,64 @@
-# Manual do Usuário
+# User manual
 
-## Primeiro uso
+## First use
 
-1. Instale o APK **2x2 Wallet**
-2. Toque em **Criar carteira**
-3. Defina uma senha forte (mínimo 8 caracteres)
-4. Guarde o backup WIF em local seguro
+1. Install the **2x2 Wallet** APK
+2. Tap **Create wallet**
+3. Set a strong password (minimum 8 characters)
+4. Store the WIF backup somewhere safe
 
-## Receber 2X2
+## Receive 2x2
 
-1. Abra a aba **Receber**
-2. Copie o endereço ou mostre o **QR code** para quem vai enviar
-3. Envie 2X2 para esse endereço na rede 2x2Coin
+1. Open the **Receive** tab
+2. Copy the address or show the **QR code**
+3. Send 2x2 to that address on the 2x2 network
 
-## Enviar 2X2
+## Send 2x2
 
-1. Abra **Enviar**
-2. Informe o endereço de destino manualmente ou toque em **Escanear QR**
-3. Informe a quantidade e confirme — a transação é assinada no celular e transmitida pela API oficial
+1. Open **Send**
+2. Enter the destination address or tap **Scan QR**
+3. Enter the amount and confirm — the transaction is signed on the phone and broadcast through the official API
 
-## Biometria
+## Biometrics
 
-1. Desbloqueie a carteira com a senha
-2. Em **Configurações**, ative **Desbloqueio biométrico**
-3. Confirme a senha quando solicitado
-4. Nas próximas aberturas, use o botão **Biometria** na tela de login
+1. Unlock the wallet with the password
+2. In **Settings**, enable **Biometric unlock**
+3. Confirm the password when asked
+4. Later launches can use the **Biometrics** button on the login screen
 
-A sessão é bloqueada automaticamente quando o app vai para segundo plano.
+The session locks automatically when the app goes to the background.
 
-## Restaurar carteira (WIF)
+## Restore wallet (WIF)
 
-1. Na aba **Receber**, toque em **Restaurar WIF**
-2. Cole a chave privada exportada anteriormente
-3. A carteira passa a usar essa conta na sessão atual
+1. On the **Receive** tab, tap **Restore WIF**
+2. Paste the private key exported earlier
+3. The wallet uses that account for the current session
 
-## Múltiplos endereços
+## Multiple addresses
 
-1. Abra **Carteiras**
-2. Toque em **Gerar novo endereço**
-3. Cada endereço pode receber um label interno
+1. Open **Wallets**
+2. Tap **Generate new address**
+3. Each address can have an internal label
 
 ## Backup
 
-1. Em **Carteiras**, toque em **Exportar WIF da conta ativa**
-2. Armazene a WIF offline
-3. Nunca compartilhe a WIF
+1. In **Wallets**, tap **Export WIF of the active account**
+2. Store the WIF offline
+3. Never share the WIF
 
-## Segurança
+## Security
 
-- A carteira é **não-custodial**
-- A equipe 2x2Coin **não** tem acesso às suas chaves
-- Sem internet, você ainda pode ver endereços já gerados após desbloquear
-- Perder senha + WIF = perda permanente dos fundos
+- The wallet is **non-custodial**
+- The 2x2 team does **not** have access to your keys
+- Without internet you can still see addresses already generated after unlock
+- Losing the password and the WIF means permanent loss of funds
 
-## Suporte de rede
+## Network
 
-- API principal: `https://server.2x2coin.com`
-- Explorer de fallback: `https://serverexplorer.2x2coin.com`
+- Official API: `https://server.2x2coin.com`
+- Explorer fallback: `https://serverexplorer.2x2coin.com`
 
 App developer (HTTPS + curl, no VPS): [APP_API.md](APP_API.md).
 Server operator: [SERVER.md](SERVER.md).
 
-Se a API estiver indisponível, o saldo pode demorar a atualizar até o fallback responder.
+If the API is down, the balance may lag until the fallback responds.

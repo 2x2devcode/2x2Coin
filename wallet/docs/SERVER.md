@@ -1,6 +1,8 @@
-# 2x2Coin JSON API and Explorer
+# 2x2 JSON API and Explorer
 
 Operator manual for the wallet backend: two Java processes on the VPS that serve JSON to the Android app. **There is no web UI.** Private keys never leave the phone.
+
+The coin is **2x2**. Gradle module and class names may use an `x2x-` prefix.
 
 Source: `wallet/x2x-server` (`X2xServer` and `X2xExplorerServer`).
 
@@ -142,7 +144,7 @@ curl -s http://127.0.0.1:50011/ext/health
 Public base: `https://server.2x2coin.com`  
 Local base: `http://127.0.0.1:50012`
 
-Mainnet P2PKH addresses start with `2` (version `0x03`). Balance fields are 2X2 decimal strings (8 places), not satoshis — except UTXOs and fee.
+Mainnet P2PKH addresses start with `2` (version `0x03`). Balance fields are 2x2 decimal strings (8 places), not satoshis — except UTXOs and fee.
 
 ### `GET /api/health`
 
@@ -201,7 +203,7 @@ Address balance from the local indexer. If the index has not seen the address ye
 
 | Field | Meaning |
 |---|---|
-| `balance` | 2X2 with 8 decimal places |
+| `balance` | 2x2 with 8 decimal places |
 | `scanning` | `true` while the indexer is still catching up |
 | `source` | `index` or `explorer` |
 | `indexedHeight` / `chainTip` | Indexer height vs chain tip |
@@ -249,7 +251,7 @@ curl -sS -H 'Content-Type: application/json' \
 {"txid":"..."}
 ```
 
-2x2Coin transactions include the Peercoin `nTime` field. The server does not sign anything.
+2x2 transactions include the Peercoin `nTime` field. The server does not sign anything.
 
 ### `POST /api/cache/invalidate/{addr}`
 

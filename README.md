@@ -83,7 +83,7 @@ GitHub Repository
 
 ## Wallet API (VPS + Android)
 
-A pasta [`wallet/`](wallet/) contém a API JSON para carteira Android. O processo na VPS chama `2x2coin-cli` para falar com o nó:
+The [`wallet/`](wallet/) folder contains the JSON API for the 2x2 Android wallet. The VPS process calls `2x2coin-cli` to talk to the node:
 
 ```bash
 bash scripts/ubuntu-22.04-api.sh

@@ -1,15 +1,17 @@
-# Manual de Instalação
+# Installation
 
 JSON API and explorer reference (endpoints, JSON, start/stop, tests): **[SERVER.md](SERVER.md)**.
 
-## Requisitos
+App developers without VPS access: **[APP_API.md](APP_API.md)**.
+
+## Requirements
 
 - Ubuntu 22.04+
 - JDK 17+
-- Android SDK 35 (somente para `:x2x-android`)
-- 2x2Coin daemon (`2x2coind`) para o servidor API
+- Android SDK 35 (only for `:x2x-android`)
+- 2x2 daemon (`2x2coind`) for the API server
 
-## 1. Clonar e compilar
+## 1. Clone and build
 
 ```bash
 git clone https://github.com/2x2devcode/2x2Coin.git
@@ -17,29 +19,29 @@ cd 2x2Coin/wallet
 ./gradlew :x2x-core:test :x2x-api:build :x2x-server:build
 ```
 
-Atalho Ubuntu 22.04 (instala JDK, compila, testa e sobe a API):
+Ubuntu 22.04 shortcut (installs JDK, builds, tests, and starts the API):
 
 ```bash
-bash scripts/ubuntu-22.04-api.sh          # na raiz do repositório
-# ou
+bash scripts/ubuntu-22.04-api.sh          # from the repository root
+# or
 cd wallet && bash scripts/ubuntu-22.04-api.sh
 ```
 
-> **Nota:** `:x2x-core:test` funciona sem Android SDK. O modulo `:x2x-android` so entra no build quando `local.properties` ou `ANDROID_HOME` apontam para um SDK valido.
+> **Note:** `:x2x-core:test` does not need the Android SDK. `:x2x-android` is included only when `local.properties` or `ANDROID_HOME` points at a valid SDK.
 
-## 2. Configurar o daemon 2x2Coin
+## 2. Configure the 2x2 daemon
 
-Edite `~/.2x2coin/2x2coin.conf`:
+Edit `~/.2x2coin/2x2coin.conf`:
 
 ```ini
 server=1
 rpcuser=x2xrpc
-rpcpassword=<senha-forte>
+rpcpassword=<strong-password>
 rpcport=15189
 rpcallowip=127.0.0.1
 ```
 
-Inicie o daemon e aguarde sincronização. **Após alterar `rpcuser`/`rpcpassword`, reinicie o daemon:**
+Start the daemon and wait for sync. **After changing `rpcuser`/`rpcpassword`, restart the daemon:**
 
 ```bash
 2x2coind stop
@@ -47,44 +49,44 @@ sleep 2
 2x2coind -daemon
 ```
 
-Confirme que `2x2coin-cli getinfo` funciona na VPS. A API JSON chama esse binário (não abre HTTP RPC por conta própria). Os scripts leem `rpcuser`/`rpcpassword` de `~/.2x2coin/2x2coin.conf` e passam para o CLI.
+Confirm `2x2coin-cli getinfo` works on the VPS. The JSON API calls that binary (it does not open HTTP RPC on its own). Scripts read `rpcuser`/`rpcpassword` from `~/.2x2coin/2x2coin.conf` and pass them to the CLI.
 
-## 3. Subir API e explorer (mesmo servidor)
+## 3. Start the API and explorer (same host)
 
-Compile:
+Build:
 
 ```bash
 bash scripts/build-server-services.sh
 ```
 
-Inicie ambos (JSON apenas, sem interface web):
+Start both (JSON only, no web UI):
 
 ```bash
-# Atualizar codigo, recompilar e reiniciar em segundo plano (recomendado na VPS)
+# Update code, rebuild, and restart in the background (recommended on the VPS)
 git pull origin main
 bash scripts/restart-server-services.sh
 ```
 
-Para parar API e explorer:
+Stop the API and explorer:
 
 ```bash
 bash scripts/stop-server-services.sh
 ```
 
-O script mata os PIDs em `wallet/.run/` e, se ainda houver processo nas portas `50012`/`50011`, encerra quem estiver escutando. Nao para o daemon `2x2coind`.
+The script kills the PIDs in `wallet/.run/` and any process still listening on `50012`/`50011`. It does not stop `2x2coind`.
 
-Para teste interativo (encerra ao pressionar Ctrl+C):
+Interactive test (stops on Ctrl+C):
 
 ```bash
 bash scripts/run-server-services.sh
 ```
 
-| Serviço | URL pública | Bind local (VPS) | Endpoints |
+| Service | Public URL | Local bind (VPS) | Endpoints |
 |---|---|---|---|
-| API oficial | `https://server.2x2coin.com` | `127.0.0.1:50012` | `/api/*` |
+| Official API | `https://server.2x2coin.com` | `127.0.0.1:50012` | `/api/*` |
 | Explorer fallback | `https://serverexplorer.2x2coin.com` | `127.0.0.1:50011` | `/ext/*` |
 
-Exemplo nginx (API) — use `scripts/nginx-x2x-api.conf.example` (inclui `proxy_read_timeout 30s`):
+Nginx example (API) — use `scripts/nginx-x2x-api.conf.example` (includes `proxy_read_timeout 30s`):
 
 ```nginx
 server {
@@ -97,7 +99,7 @@ server {
 }
 ```
 
-Exemplo nginx (explorer):
+Nginx example (explorer):
 
 ```nginx
 server {
@@ -109,24 +111,24 @@ server {
 }
 ```
 
-## 4. Testar de fora da VPS
+## 4. Test from outside the VPS
 
-API e explorer escutam só em `127.0.0.1`. Não abra as portas `50012`/`50011` no firewall: o acesso externo é HTTPS `:443` via nginx.
+The API and explorer bind to `127.0.0.1` only. Do not open `50012`/`50011` on the firewall: external access is HTTPS `:443` through nginx.
 
-### Pré-requisitos
+### Prerequisites
 
-1. Serviços no ar na VPS (`bash scripts/restart-server-services.sh`)
-2. Teste **local** ok:
+1. Services running on the VPS (`bash scripts/restart-server-services.sh`)
+2. **Local** test OK:
 
 ```bash
 curl -s http://127.0.0.1:50012/api/health
 curl -s http://127.0.0.1:50011/ext/health
 ```
 
-Resposta esperada: `{"api":"ok","rpc":"ok"}` e `{"explorer":"ok","rpc":"ok"}`.
+Expected: `{"api":"ok","rpc":"ok"}` and `{"explorer":"ok","rpc":"ok"}`.
 
-3. DNS: registros **A** de `server.2x2coin.com` e `serverexplorer.2x2coin.com` apontando para o IP da VPS
-4. nginx + certificado TLS (Let's Encrypt). Exemplo: `scripts/nginx-x2x-api.conf.example`
+3. DNS: **A** records for `server.2x2coin.com` and `serverexplorer.2x2coin.com` pointing at the VPS IP
+4. nginx + TLS (Let's Encrypt). Example: `scripts/nginx-x2x-api.conf.example`
 
 ```bash
 sudo apt-get install -y nginx certbot python3-certbot-nginx
@@ -136,13 +138,13 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d server.2x2coin.com -d serverexplorer.2x2coin.com
 ```
 
-### De qualquer máquina (laptop, celular, CI)
+### From any machine (laptop, phone, CI)
 
 ```bash
-# atalho
+# shortcut
 bash scripts/test-server-external.sh
 
-# ou curls manuais
+# or manual curls
 curl -sS https://server.2x2coin.com/api/health
 curl -sS https://server.2x2coin.com/api/status
 curl -sS https://server.2x2coin.com/api/fee
@@ -153,51 +155,51 @@ curl -sS https://serverexplorer.2x2coin.com/ext/getsummary
 curl -sS https://serverexplorer.2x2coin.com/ext/getaddress/2NHBXKyRY4ZBvyfyuZ2fZvqaGyo89vMGFW
 ```
 
-Hosts customizados:
+Custom hosts:
 
 ```bash
-API_BASE=https://seu-host EXPLORER_BASE=https://seu-explorer bash scripts/test-server-external.sh
+API_BASE=https://your-api-host EXPLORER_BASE=https://your-explorer-host bash scripts/test-server-external.sh
 ```
 
-### Sem DNS ainda (túnel SSH)
+### No DNS yet (SSH tunnel)
 
-Do laptop, sem expor as portas na internet:
+From a laptop, without exposing the ports on the internet:
 
 ```bash
-ssh -L 50012:127.0.0.1:50012 -L 50011:127.0.0.1:50011 usuario@IP_DA_VPS
+ssh -L 50012:127.0.0.1:50012 -L 50011:127.0.0.1:50011 user@VPS_IP
 ```
 
-Em outro terminal no laptop:
+In another terminal on the laptop:
 
 ```bash
 curl -s http://127.0.0.1:50012/api/health
 curl -s http://127.0.0.1:50011/ext/health
 ```
 
-| Sintoma | Causa |
+| Symptom | Cause |
 |---|---|
-| `Could not resolve host` | Falta registro A no DNS |
-| `Connection refused` / timeout na :443 | nginx parado, firewall ou IP errado |
-| `502` / `504` | nginx ok, mas API/explorer local parado ou lento |
-| Local ok, HTTPS falha | nginx `proxy_pass` apontando para porta errada |
+| `Could not resolve host` | Missing DNS A record |
+| `Connection refused` / timeout on :443 | nginx down, firewall, or wrong IP |
+| `502` / `504` | nginx is up, but the local API/explorer is down or slow |
+| Local OK, HTTPS fails | nginx `proxy_pass` pointing at the wrong port |
 
-## 5. Gerar APK
+## 5. Build the APK
 
-Configure o SDK (uma das opcoes):
+Configure the SDK (one of):
 
 ```bash
-# Opcao A: variavel de ambiente (local.properties e gerado automaticamente)
+# Option A: environment variable (local.properties is generated)
 export ANDROID_HOME=$HOME/Android/Sdk
 
-# Opcao B: script auxiliar
+# Option B: helper script
 bash scripts/setup-android-sdk.sh
 
-# Opcao C: arquivo manual
+# Option C: manual file
 cp local.properties.example local.properties
-# edite sdk.dir no arquivo
+# edit sdk.dir in the file
 ```
 
-Depois compile:
+Then build:
 
 ```bash
 ./gradlew :x2x-android:assembleRelease
@@ -205,49 +207,48 @@ Depois compile:
 
 APK: `x2x-android/build/outputs/apk/release/x2x-android-release.apk`
 
-## 6. Assinatura de release
+## 6. Release signing
 
 ```bash
 bash scripts/generate-release-keystore.sh
 ```
 
-O script cria `release/x2x-wallet.jks` e `keystore.properties` (ambos gitignored). O Gradle lê essas propriedades automaticamente para `assembleRelease`.
+The script creates `release/x2x-wallet.jks` and `keystore.properties` (both gitignored). Gradle reads those properties automatically for `assembleRelease`.
 
-Para senhas personalizadas:
-
-```bash
-STORE_PASS='sua-senha' KEY_PASS='sua-senha' bash scripts/generate-release-keystore.sh
-```
-
-## 7. Publicar explorer fallback
-
-O endpoint `https://serverexplorer.2x2coin.com/ext/getsummary` deve estar acessível para fallback de rede. O explorer não possui interface web.
-
-## 8. Diagnostico de erros
-
-Se `curl` publico retornar `Server Error` ou JSON `{"error":"..."}`:
+Custom passwords:
 
 ```bash
-bash scripts/diagnose-server.sh          # na VPS (local)
-bash scripts/test-server-external.sh     # de qualquer máquina (HTTPS)
+STORE_PASS='your-password' KEY_PASS='your-password' bash scripts/generate-release-keystore.sh
 ```
 
-`run-server-services.sh` carrega credenciais de `~/.2x2coin/2x2coin.conf` automaticamente.
+## 7. Publish the explorer fallback
 
-Causas comuns:
+`https://serverexplorer.2x2coin.com/ext/getsummary` must be reachable for network fallback. The explorer has no web UI.
 
-| Sintoma | Causa |
+## 8. Troubleshooting
+
+If a public `curl` returns `Server Error` or JSON `{"error":"..."}`:
+
+```bash
+bash scripts/diagnose-server.sh          # on the VPS (local)
+bash scripts/test-server-external.sh     # from any machine (HTTPS)
+```
+
+`run-server-services.sh` loads credentials from `~/.2x2coin/2x2coin.conf` automatically.
+
+Common causes:
+
+| Symptom | Cause |
 |---|---|
-| `2x2coin-cli ... authorization failed` | `X2X_RPC_USER` / `X2X_RPC_PASSWORD` diferentes do daemon, ou `2x2coin-cli` ausente |
-| `failed to start 2x2coin-cli` | binario nao esta no PATH — defina `X2X_CLI=/usr/local/bin/2x2coin-cli` |
-| `Connection refused` / CLI error | `2x2coind` nao esta rodando ou `server=1` ausente |
-| `502` com mensagem do CLI | API/explorer rodando, mas `2x2coin-cli` nao consegue falar com o daemon |
-| `Server Error` (texto puro) | Versao antiga sem tratamento JSON — atualize com `git pull` |
+| `2x2coin-cli ... authorization failed` | `X2X_RPC_USER` / `X2X_RPC_PASSWORD` differ from the daemon, or `2x2coin-cli` is missing |
+| `failed to start 2x2coin-cli` | binary not on `PATH` — set `X2X_CLI=/usr/local/bin/2x2coin-cli` |
+| `Connection refused` / CLI error | `2x2coind` is not running or `server=1` is missing |
+| `502` with a CLI message | API/explorer is up, but `2x2coin-cli` cannot talk to the daemon |
+| Plain-text `Server Error` | Old build without JSON errors — update with `git pull` |
 
-Teste local antes do HTTPS:
+Local test before HTTPS:
 
 ```bash
 curl -s http://127.0.0.1:50012/api/health
 curl -s http://127.0.0.1:50011/ext/health
 ```
-
