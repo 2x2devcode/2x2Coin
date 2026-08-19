@@ -58,6 +58,7 @@ A sessão é bloqueada automaticamente quando o app vai para segundo plano.
 - API principal: `https://server.2x2coin.com`
 - Explorer de fallback: `https://serverexplorer.2x2coin.com`
 
-Server documentation: [SERVER.md](SERVER.md).
+App developer (HTTPS + curl, no VPS): [APP_API.md](APP_API.md).
+Server operator: [SERVER.md](SERVER.md).
 
 Se a API estiver indisponível, o saldo pode demorar a atualizar até o fallback responder.

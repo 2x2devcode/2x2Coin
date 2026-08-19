@@ -363,6 +363,8 @@ tail -n 80 logs/x2x-explorer.log
 
 ## Android app
 
-The client (`x2x-api`) calls these URLs. TLS pinning in the APK is still empty until the production hosts have a stable certificate. See [DEVELOPER.md](DEVELOPER.md) and [USER_MANUAL.md](USER_MANUAL.md).
+The client (`x2x-api`) calls these public HTTPS URLs. App developers without VPS access: [APP_API.md](APP_API.md).
+
+TLS pinning in the APK is still empty until the production hosts have a stable certificate. See [DEVELOPER.md](DEVELOPER.md) and [USER_MANUAL.md](USER_MANUAL.md).
 
 Full install (JDK, APK, keystore): [INSTALLATION.md](INSTALLATION.md). Module layout: [ARCHITECTURE.md](ARCHITECTURE.md).

@@ -86,6 +86,8 @@ Operational manual and JSON contract: [SERVER.md](SERVER.md).
 2. `GET /api/address/{addr}/balance`
 3. Fallback opcional para explorer em falha da API
 
+Public HTTPS curls for app developers (no VPS): [APP_API.md](APP_API.md).
+
 ## Estrutura de pastas
 
 ```
