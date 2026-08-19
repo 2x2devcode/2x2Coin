@@ -1,83 +1,85 @@
 # 2x2 Wallet API
 
-API JSON para a carteira Android **não-custodial** da moeda **2x2Coin (2X2)**, no mesmo modelo do [InfiniteRicks-new](https://github.com/2x2devcode/InfiniteRicks-new).
+JSON API for the non-custodial Android wallet of the **2x2** coin, modeled on [InfiniteRicks-new](https://github.com/2x2devcode/InfiniteRicks-new).
 
-O servidor instala em uma VPS Linux, chama **`2x2coin-cli`** (o mesmo cliente do daemon) e expõe `/api/*` para o aplicativo. As chaves privadas nunca saem do celular.
+The server runs on a Linux VPS, calls **`2x2coin-cli`** (the same client as the daemon), and exposes `/api/*` to the app. Private keys never leave the phone.
 
-## Módulos
+Gradle modules keep an `x2x-` prefix in source paths; the coin name is **2x2**.
 
-| Módulo | Descrição |
+## Modules
+
+| Module | Description |
 |---|---|
-| `x2x-core` | Parâmetros da rede, criptografia, transações e armazenamento da carteira |
-| `x2x-api` | Cliente HTTP com TLS, retry, failover e certificate pinning |
-| `x2x-server` | API JSON em `127.0.0.1:50012` e explorer em `127.0.0.1:50011` |
-| `x2x-android` | Aplicativo Android 15+ (omitido se o SDK não estiver instalado) |
+| `x2x-core` | Network parameters, cryptography, transactions, wallet storage |
+| `x2x-api` | HTTP client with TLS, retry, failover, and certificate pinning |
+| `x2x-server` | JSON API on `127.0.0.1:50012` and explorer on `127.0.0.1:50011` |
+| `x2x-android` | Android 15+ app (omitted if the SDK is not installed) |
 
-## Parâmetros da rede (mainnet)
+## Mainnet parameters
 
-Fonte: este repositório (`src/chainparams.cpp`, `src/main.cpp`)
+Source: this repository (`src/chainparams.cpp`, `src/main.cpp`)
 
-- P2PKH version: `0x03` (endereços começam com `2`)
+- P2PKH version: `0x03` (addresses start with `2`)
 - P2SH version: `0x5A`
-- WIF version: `0x80` (comprimido)
+- WIF version: `0x80` (compressed)
 - `COIN = 100_000_000`
 - `MIN_TX_FEE = 10_000` satoshis
-- Transações incluem campo `nTime` (extensão Peercoin)
-- Mensagem: `2x2Coin Signed Message:\n`
+- Transactions include the `nTime` field (Peercoin extension)
+- Message prefix: `2x2Coin Signed Message:\n`
 - P2P `15190` / RPC `15189`
-- Datadir Unix: `~/.2x2coin` / `2x2coin.conf`
+- Unix datadir: `~/.2x2coin` / `2x2coin.conf`
 
-## Ubuntu 22.04 — compilar e executar
+## Ubuntu 22.04 — build and run
 
-Na raiz do repositório:
-
-```bash
-bash scripts/ubuntu-22.04-api.sh
-```
-
-Ou dentro de `wallet/`:
+From the repository root:
 
 ```bash
 bash scripts/ubuntu-22.04-api.sh
 ```
 
-O script instala JDK 17 se necessário, roda os testes Gradle, sobe um `MockRpcServer` quando o daemon não está no ar, inicia API + explorer e valida:
+Or from `wallet/`:
+
+```bash
+bash scripts/ubuntu-22.04-api.sh
+```
+
+The script installs JDK 17 if needed, runs Gradle tests, starts a `MockRpcServer` when the daemon is down, brings up the API + explorer, and checks:
 
 ```bash
 curl -s http://127.0.0.1:50012/api/health
 curl -s http://127.0.0.1:50011/ext/health
 ```
 
-Para deixar os serviços rodando após o smoke test:
+Keep the services running after the smoke test:
 
 ```bash
 KEEP_RUNNING=1 bash scripts/ubuntu-22.04-api.sh
 ```
 
-Para parar API e explorer depois:
+Stop the API and explorer afterwards:
 
 ```bash
 bash scripts/stop-server-services.sh
 ```
 
-Com `2x2coind` já sincronizado, `2x2coin-cli` no PATH e `~/.2x2coin/2x2coin.conf` configurado, o script usa o CLI real. Sem daemon, sobe `MockRpcServer` e `scripts/mock-2x2coin-cli.sh` (mesmos argumentos do `2x2coin-cli`).
+With a synced `2x2coind`, `2x2coin-cli` on `PATH`, and `~/.2x2coin/2x2coin.conf` set, the script uses the real CLI. Without a daemon it starts `MockRpcServer` and `scripts/mock-2x2coin-cli.sh` (same flags as `2x2coin-cli`).
 
-## VPS com daemon real
+## VPS with a real daemon
 
 ```bash
 cd wallet
 ./gradlew :x2x-core:test :x2x-server:installDist
-bash scripts/restart-server-services.sh   # sobe em segundo plano
-bash scripts/stop-server-services.sh      # para API (50012) e explorer (50011)
+bash scripts/restart-server-services.sh   # start in the background
+bash scripts/stop-server-services.sh      # stop API (50012) and explorer (50011)
 ```
 
-| Serviço | URL pública | Bind local | Rotas |
+| Service | Public URL | Local bind | Routes |
 |---|---|---|---|
-| API oficial | `https://server.2x2coin.com` | `127.0.0.1:50012` | `/api/*` |
-| Explorer JSON | `https://serverexplorer.2x2coin.com` | `127.0.0.1:50011` | `/ext/*` |
-| Explorer público (fallback) | `https://explorer.2x2coin.com` | — | `/ext/getsummary`, `/ext/getbalance/{addr}` |
+| Official API | `https://server.2x2coin.com` | `127.0.0.1:50012` | `/api/*` |
+| JSON explorer | `https://serverexplorer.2x2coin.com` | `127.0.0.1:50011` | `/ext/*` |
+| Public explorer (fallback) | `https://explorer.2x2coin.com` | — | `/ext/getsummary`, `/ext/getbalance/{addr}` |
 
-Teste local (na VPS) e externo (HTTPS, de qualquer máquina):
+Local (on the VPS) and external (HTTPS from any machine):
 
 ```bash
 curl -s http://127.0.0.1:50012/api/health
@@ -85,7 +87,7 @@ curl -s http://127.0.0.1:50011/ext/health
 bash scripts/test-server-external.sh
 ```
 
-As portas `50012`/`50011` não são públicas. Fora da VPS use `https://server.2x2coin.com` e `https://serverexplorer.2x2coin.com` (nginx + DNS).
+Ports `50012`/`50011` are not public. From outside the VPS use `https://server.2x2coin.com` and `https://serverexplorer.2x2coin.com` (nginx + DNS).
 
 **App developer (no VPS):** [docs/APP_API.md](docs/APP_API.md) — public HTTPS URLs, curl commands, and how the Android client reads API + explorer data.
 

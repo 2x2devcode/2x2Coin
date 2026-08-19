@@ -2,7 +2,7 @@
 
 This document is for **Android / client developers**. You do **not** need SSH, the VPS, `2x2coind`, or `2x2coin-cli`. All chain data the wallet needs is available over **HTTPS from any laptop**.
 
-There is no API key. There is no web UI. Private keys stay on the phone; the server only returns JSON and relays a signed raw transaction.
+The coin is **2x2**. There is no API key. There is no web UI. Private keys stay on the phone; the server only returns JSON and relays a signed raw transaction.
 
 VPS operators: see [SERVER.md](SERVER.md).
 
@@ -140,7 +140,7 @@ curl -sS "$API/api/address/${ADDR}/balance"
 
 | Field | App use |
 |---|---|
-| `balance` | String in 2X2 (8 decimals), **not** satoshis |
+| `balance` | String in 2x2 (8 decimals), **not** satoshis |
 | `scanning` | `true` → index still catching up; show a “updating” state, do not treat `0` as final |
 | `source` | `index` or `explorer` (server-side fallback) |
 | `indexedHeight` / `chainTip` | How far the server index is vs the chain |

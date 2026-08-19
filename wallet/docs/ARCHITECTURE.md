@@ -1,18 +1,18 @@
-# Arquitetura — 2x2 Wallet
+# Architecture — 2x2 Wallet
 
-## Visão geral
+## Overview
 
 ```mermaid
 flowchart TB
     subgraph Android
-        UI[x2x-android UI]
+        UI[Android UI]
         Repo[WalletRepository]
         Pin[NativePinProvider JNI]
     end
 
     subgraph Libraries
-        API[x2x-api]
-        Core[x2x-core]
+        API[HTTP client]
+        Core[core]
     end
 
     subgraph Remote
@@ -30,65 +30,76 @@ flowchart TB
   Cli --> Daemon[2x2coind]
 ```
 
-## Módulos
+## Modules
+
+Gradle module names use an `x2x-` prefix. The coin is **2x2**.
 
 ### `x2x-core`
-Biblioteca Java pura com:
-- `NetworkParameters` — parâmetros alteráveis da moeda
-- `crypto` — Base58, secp256k1, endereços, WIF
-- `tx` — serialização Peercoin (`nTime`), assinatura, fee
-- `wallet` — contas com label, backup criptografado
+
+Pure Java library:
+
+- `NetworkParameters` — coin parameters
+- `crypto` — Base58, secp256k1, addresses, WIF
+- `tx` — Peercoin serialization (`nTime`), signing, fee
+- `wallet` — labeled accounts, encrypted backup
 
 ### `x2x-api`
-Cliente HTTP com:
-- OkHttp + pinning customizado
-- Retry exponencial
-- Failover preparado para múltiplos `baseUrls`
-- Sem chave de API no APK
+
+HTTP client with:
+
+- OkHttp + custom pinning
+- Exponential retry
+- Failover across multiple `baseUrls`
+- No API key in the APK
 
 ### `x2x-server`
-Dois processos JSON (sem interface web) no mesmo servidor:
 
-| Classe | Bind VPS | URL pública | Rotas |
+Two JSON processes (no web UI) on the same host:
+
+| Class | VPS bind | Public URL | Routes |
 |---|---|---|---|
 | `X2xServer` | `127.0.0.1:50012` | `https://server.2x2coin.com` | `/api/*` |
 | `X2xExplorerServer` | `127.0.0.1:50011` | `https://serverexplorer.2x2coin.com` | `/ext/*` |
 
 Scripts: `scripts/build-server-services.sh`, `scripts/run-server-services.sh`
 
-O `x2x-server` não abre HTTP RPC no daemon: cada consulta é `2x2coin-cli <metodo> [params]`.
+The server does not open HTTP RPC on the daemon: every query is `2x2coin-cli <method> [params]`.
 
-Operational manual and JSON contract: [SERVER.md](SERVER.md).
+Operator manual and JSON contract: [SERVER.md](SERVER.md).
 
 ### `x2x-android`
-- Activity única + fragments
-- Bottom navigation: Início, Enviar, Receber, Carteiras, Config
-- Senha local + armazenamento criptografado
-- Pin da chave pública TLS oculto em `x2xpin` (JNI + XOR)
 
-## Fluxos
+- Single activity + fragments
+- Bottom navigation: Home, Send, Receive, Wallets, Settings
+- Local password + encrypted storage
+- TLS public-key pin hidden in native code (JNI + XOR)
 
-### Criação da carteira
-1. Usuário define senha (mín. 8 caracteres)
-2. PBKDF2 gera hash de autenticação local
-3. `WalletStore` gera conta `Principal`
-4. JSON da carteira é criptografado com AES-GCM
-5. Blob salvo em `EncryptedSharedPreferences`
+## Flows
 
-### Envio
-1. Busca UTXOs na API oficial
-2. Seleciona inputs confirmados
-3. Assina localmente com `TransactionSigner`
-4. Envia `rawTx` via `POST /api/tx/broadcast`
+### Wallet creation
 
-### Sincronização
-1. `GET /api/status` a cada refresh manual
+1. User sets a password (min. 8 characters)
+2. PBKDF2 produces a local authentication hash
+3. `WalletStore` creates a `Principal` account
+4. Wallet JSON is encrypted with AES-GCM
+5. Blob is stored in `EncryptedSharedPreferences`
+
+### Send
+
+1. Fetch UTXOs from the official API
+2. Select confirmed inputs
+3. Sign locally with `TransactionSigner`
+4. Send `rawTx` via `POST /api/tx/broadcast`
+
+### Sync
+
+1. `GET /api/status` on each manual refresh
 2. `GET /api/address/{addr}/balance`
-3. Fallback opcional para explorer em falha da API
+3. Optional explorer fallback if the API fails
 
 Public HTTPS curls for app developers (no VPS): [APP_API.md](APP_API.md).
 
-## Estrutura de pastas
+## Folder layout
 
 ```
 x2x-core/src/main/java/com/x2xcoin/wallet/core/
@@ -105,14 +116,14 @@ x2x-android/src/main/java/com/x2xcoin/wallet/
 docs/
 ```
 
-## Correções em relação ao modelo Lunarium
+## Changes versus the Lunarium model
 
-| Problema Lunarium | Solução 2X2 |
+| Lunarium issue | 2x2 approach |
 |---|---|
-| Monólito de 6.700 linhas | Módulos Gradle separados |
-| API key XOR no APK | Sem API key no cliente |
-| `usesCleartextTraffic=true` | Desabilitado |
-| Pin em Java estático | JNI `rickpin` |
-| Masternode / iHostMN | Removido |
-| Senha fraca (6 chars) | Mínimo 8 caracteres |
+| 6,700-line monolith | Separate Gradle modules |
+| API key XOR in the APK | No API key on the client |
+| `usesCleartextTraffic=true` | Disabled |
+| Static Java pin | JNI pin provider |
+| Masternode / iHostMN | Removed |
+| Weak password (6 chars) | Minimum 8 characters |
 | PBKDF2 120k | PBKDF2 210k + AES-GCM |

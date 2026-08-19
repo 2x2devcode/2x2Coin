@@ -1,31 +1,32 @@
-# Manual do Desenvolvedor
+# Developer notes
 
-## Alterar parâmetros da moeda
+## Coin parameters
 
-Edite `x2x-core/.../chain/NetworkParameters.java`.
+Edit `x2x-core/.../chain/NetworkParameters.java`.
 
-Todos os módulos dependem desta classe — não duplique constantes.
+Every module depends on this class — do not duplicate constants. The coin name is **2x2**.
 
-## Testes
+## Tests
 
 ```bash
 ./gradlew :x2x-core:test
 ```
 
-Nao e necessario Android SDK para os testes do `x2x-core`. O modulo `:x2x-android` so e incluido quando `ANDROID_HOME` ou `local.properties` apontam para um SDK valido; caso contrario, `./gradlew :x2x-core:test` roda normalmente.
+The Android SDK is not required for `:x2x-core:test`. `:x2x-android` is included only when `ANDROID_HOME` or `local.properties` points at a valid SDK; otherwise `./gradlew :x2x-core:test` still runs.
 
-Testes cobrem:
-- vetores Base58 do repositório oficial
-- round-trip WIF comprimida
-- montagem de transação assinada
+Tests cover:
 
-## Atualizar certificate pin
+- official Base58 vectors
+- compressed WIF round-trip
+- signed transaction assembly
 
-Pins TLS ainda nao estao gravados no APK (servidores `server.2x2coin.com` / `serverexplorer.2x2coin.com` precisam do certificado em producao). Ate la o cliente HTTP aceita a cadeia do sistema.
+## Update the certificate pin
 
-Depois do HTTPS no ar, grave o SHA-256 SPKI em `x2x-android/src/main/cpp/pin_config.cpp`.
+TLS pins are not stored in the APK yet (`server.2x2coin.com` / `serverexplorer.2x2coin.com` need a production certificate). Until then the HTTP client trusts the system store.
 
-1. Obtenha o SHA-256 da chave pública TLS:
+After HTTPS is live, store the SHA-256 SPKI in `x2x-android/src/main/cpp/pin_config.cpp`.
+
+1. Get the TLS public-key SHA-256:
 
 ```bash
 echo | openssl s_client -connect server.2x2coin.com:443 -servername server.2x2coin.com 2>/dev/null \
@@ -34,36 +35,36 @@ echo | openssl s_client -connect server.2x2coin.com:443 -servername server.2x2co
   | openssl dgst -sha256 -hex
 ```
 
-2. Gere bytes XOR para `x2x-android/src/main/cpp/pin_config.cpp` (`getApiPinnedHashes` / `getExplorerPinnedHashes`)
-3. Recompile o APK
+2. Generate XOR bytes for `x2x-android/src/main/cpp/pin_config.cpp` (`getApiPinnedHashes` / `getExplorerPinnedHashes`)
+3. Rebuild the APK
 
-## Depurar o app Android (adb logcat)
+## Debug the Android app (adb logcat)
 
 Linux / macOS:
 
 ```bash
 adb logcat -s X2xWallet:E OkHttp:W AndroidRuntime:E
-adb logcat *:E | grep -iE 'X2xWallet|x2xcoin|certificate|pin mismatch|SSL'
+adb logcat *:E | grep -iE 'X2xWallet|2x2coin|certificate|pin mismatch|SSL'
 ```
 
 Windows (PowerShell / CMD):
 
 ```bat
 adb logcat -s X2xWallet:E OkHttp:W AndroidRuntime:E
-adb logcat *:E | findstr /I "X2xWallet x2xcoin certificate pin SSL"
+adb logcat *:E | findstr /I "X2xWallet 2x2coin certificate pin SSL"
 ```
 
-Erros comuns no log:
+Common log errors:
 
-| Mensagem | Causa |
+| Message | Cause |
 |---|---|
-| `certificate pin mismatch` | Certificado TLS mudou — atualize `pin_config.cpp` |
-| `HTTP 4xx/5xx` | API/explorer retornando erro |
-| `Unable to resolve host` | DNS ou URL errada no APK antigo |
+| `certificate pin mismatch` | TLS certificate changed — update `pin_config.cpp` |
+| `HTTP 4xx/5xx` | API/explorer returning an error |
+| `Unable to resolve host` | DNS or a wrong URL in an old APK |
 
-## Adicionar servidor de failover
+## Add a failover server
 
-Em `ApiEndpoints.OFFICIAL_BASE_URLS`, inclua URLs adicionais:
+In `ApiEndpoints.OFFICIAL_BASE_URLS`, add extra URLs:
 
 ```java
 public static final List<String> OFFICIAL_BASE_URLS = List.of(
@@ -74,21 +75,21 @@ public static final List<String> OFFICIAL_BASE_URLS = List.of(
 
 Explorer fallback: `NetworkParameters.EXPLORER_BASE_URL` (`serverexplorer.2x2coin.com`)
 
-## Indexador de saldo (servidor)
+## Balance indexer (server)
 
-A API nao usa mais `getreceivedbyaddress` / `listunspent` do daemon (esses RPCs so enxergam enderecos da carteira do no). O `x2x-server` mantem um indexador on-chain em `~/.x2x-wallet-index` (ou `INDEX_DIR`).
+The API does not use daemon `getreceivedbyaddress` / `listunspent` (those RPCs only see the node wallet). The server keeps an on-chain indexer in `~/.x2x-wallet-index` (or `INDEX_DIR`).
 
-| Variavel | Padrao | Descricao |
+| Variable | Default | Description |
 |---|---|---|
-| `INDEX_DIR` | `~/.x2x-wallet-index` | Pasta do indice persistido |
-| `INDEX_START_HEIGHT` | `0` | Bloco inicial da sincronizacao completa |
-| `INDEX_FAST_LOOKBACK_WINDOWS` | `30,60,120` | Varredura rapida na API (segundos) |
-| `INDEX_FAST_BUDGET_MS` | `6000` | Tempo maximo da consulta rapida |
-| `INDEX_LOOKBACK_WINDOWS` | `200,500,1000,2000` | Varredura profunda em segundo plano |
-| `INDEX_QUERY_BUDGET_MS` | `60000` | Tempo maximo da varredura profunda |
-| `RPC_TIMEOUT_SECONDS` | `8` | Timeout por chamada RPC |
+| `INDEX_DIR` | `~/.x2x-wallet-index` | Persisted index directory |
+| `INDEX_START_HEIGHT` | `0` | First block of the full sync |
+| `INDEX_FAST_LOOKBACK_WINDOWS` | `30,60,120` | Fast lookback windows |
+| `INDEX_FAST_BUDGET_MS` | `6000` | Fast query time budget |
+| `INDEX_LOOKBACK_WINDOWS` | `200,500,1000,2000` | Deep scan windows |
+| `INDEX_QUERY_BUDGET_MS` | `60000` | Deep scan time budget |
+| `RPC_TIMEOUT_SECONDS` | `8` | Timeout per RPC/CLI call |
 
-Apos atualizar o servidor na VPS:
+After updating the server on the VPS:
 
 ```bash
 bash scripts/run-server-services.sh
@@ -96,17 +97,17 @@ curl -s https://server.2x2coin.com/api/address/2NHBXKyRY4ZBvyfyuZ2fZvqaGyo89vMGF
 bash scripts/test-server-external.sh
 ```
 
-A primeira consulta pode levar alguns minutos enquanto o indice varre os blocos recentes; a sincronizacao completa continua em segundo plano.
+The first query can take a few minutes while the index scans recent blocks; the full sync continues in the background.
 
-## Endpoints REST esperados
+## Expected REST endpoints
 
 How the Android app consumes these hosts without VPS access (curl cookbook): [APP_API.md](APP_API.md).
 
 Full operator contract (JSON examples, errors, environment variables): [SERVER.md](SERVER.md).
 
-### API oficial (`https://server.2x2coin.com` -> `127.0.0.1:50012`)
+### Official API (`https://server.2x2coin.com` -> `127.0.0.1:50012`)
 
-| Método | Path |
+| Method | Path |
 |---|---|
 | GET | `/api/status` |
 | GET | `/api/fee` |
@@ -116,20 +117,21 @@ Full operator contract (JSON examples, errors, environment variables): [SERVER.m
 | POST | `/api/tx/broadcast` |
 | POST | `/api/cache/invalidate/{addr}` |
 
-### Explorer JSON (`https://serverexplorer.2x2coin.com` -> `127.0.0.1:50011`, sem interface web)
+### Explorer JSON (`https://serverexplorer.2x2coin.com` -> `127.0.0.1:50011`, no web UI)
 
-| Método | Path |
+| Method | Path |
 |---|---|
 | GET | `/ext/getsummary` |
 | GET | `/ext/getaddress/{addr}` |
 
-## Serialização de transação
+## Transaction serialization
 
-Ordem wire 2x2Coin:
+2x2 wire order:
+
 1. `nVersion` (int32)
 2. `nTime` (uint32)
 3. `vin[]`
 4. `vout[]`
 5. `nLockTime` (uint32)
 
-O campo `nTime` é obrigatório — difere do Bitcoin Core moderno.
+The `nTime` field is required — it differs from modern Bitcoin Core.
