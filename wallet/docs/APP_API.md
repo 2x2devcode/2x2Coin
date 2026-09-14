@@ -221,7 +221,7 @@ curl -sS -X POST -H 'Content-Type: application/json' \
 {"txid":"..."}
 ```
 
-Wire format must include Peercoin `nTime` (see [DEVELOPER.md](DEVELOPER.md)). A Bitcoin-Core-style tx without `nTime` will be rejected.
+Wire format must include Peercoin `nTime` (see [DEVELOPER.md](DEVELOPER.md)). A Bitcoin-Core-style tx without `nTime` will be rejected. Invalid or oversized hex returns HTTP **400** `{"error":"invalid transaction"}` without reaching the node. Too many broadcasts from one IP return HTTP **429**.
 
 Do not broadcast real funds from a laptop unless you intend to spend.
 
@@ -267,7 +267,7 @@ x2x-api      ApiEndpoints          → path constants
 x2x-core     NetworkParameters     → hosts, fee, address version
 ```
 
-User-Agent: `2x2Coin-Wallet/1.1.7`. TLS pinning in the APK is currently empty (system trust store). After production certs are stable, pins go in `x2x-android/src/main/cpp/pin_config.cpp` ([DEVELOPER.md](DEVELOPER.md)).
+User-Agent: `2x2Coin-Wallet/1.1.7`. The APK pins the production TLS public keys for `server.2x2coin.com` and `serverexplorer.2x2coin.com` (leaf + Let's Encrypt YE1) in `x2x-android/src/main/cpp/pin_config.cpp`. Operators must renew certificates with `certbot --reuse-key` so a leaf rotation does not brick installed apps. How to recompute pins: [DEVELOPER.md](DEVELOPER.md).
 
 ## Errors you will see from outside
 
@@ -276,11 +276,13 @@ All JSON errors look like `{"error":"…"}`.
 | What you see | Meaning | What the app should do |
 |---|---|---|
 | `Could not resolve host` | DNS for `server.2x2coin.com` / `serverexplorer.2x2coin.com` is not live yet | Keep explorer fallback; do not hard-fail the UI |
+| HTTP 400 `invalid transaction` | Missing/non-hex/`rawTx` too large | Do not retry the same payload |
 | HTTP 404 `not found` | Wrong path | Check `ApiEndpoints` |
-| HTTP 502 `{"error":"..."}` | Node/CLI behind nginx failed | Retry; then explorer for status/balance |
+| HTTP 429 `too many requests` | Client or shared NAT is over the rate limit | Back off; then retry |
+| HTTP 502 `{"error":"upstream unavailable"}` | Node/CLI behind nginx failed | Retry; then explorer for status/balance |
 | HTTP 504 / empty body | nginx timeout | Retry; show last known balance |
 | `scanning: true`, balance `0` | Server index not caught up | Poll; do not show “empty wallet” as final |
-| Broadcast HTTP 502 | Invalid hex, missing `nTime`, or node reject | Surface the `error` string |
+| Broadcast HTTP 502 | Node rejected a well-formed hex (missing `nTime`, mempool, etc.) | Surface a generic send failure; do not show CLI text |
 
 There is no authentication. Anyone can read public address data. Spending still requires a key on the device.
 

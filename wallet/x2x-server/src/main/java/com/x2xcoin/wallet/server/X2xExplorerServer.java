@@ -18,6 +18,7 @@ public final class X2xExplorerServer {
         String bindHost = env("BIND_HOST", NetworkParameters.SERVER_BIND_HOST);
 
         io.javalin.Javalin app = JavalinSupport.createApp();
+        HttpSecurity.install(app);
         ServerSupport.configureErrors(app);
         app.get("/ext/health", ctx -> {
             try {
@@ -27,7 +28,7 @@ public final class X2xExplorerServer {
                 ok.addProperty("rpc", "ok");
                 JsonResponses.write(ctx, ok);
             } catch (IOException error) {
-                JsonResponses.error(ctx, 502, error.getMessage());
+                JsonResponses.upstreamError(ctx);
             }
         });
         app.get("/ext/getsummary", ServerSupport.rpc(() -> summary(rpcClient)));

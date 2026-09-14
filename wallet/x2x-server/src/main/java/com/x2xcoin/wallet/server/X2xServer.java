@@ -2,14 +2,12 @@ package com.x2xcoin.wallet.server;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.x2xcoin.wallet.core.chain.NetworkParameters;
-import com.x2xcoin.wallet.core.wallet.Amount;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 final class X2xApiService {
@@ -49,7 +47,7 @@ final class X2xApiService {
 
     JsonObject broadcast(String rawTx) throws IOException {
         JsonArray params = new JsonArray();
-        params.add(rawTx);
+        params.add(TxBroadcast.requireRawHex(rawTx));
         String txid = rpcClient.call("sendrawtransaction", params).getAsString();
         JsonObject out = new JsonObject();
         out.addProperty("txid", txid);
@@ -74,6 +72,7 @@ public final class X2xServer {
         String bindHost = env("BIND_HOST", NetworkParameters.SERVER_BIND_HOST);
 
         io.javalin.Javalin app = JavalinSupport.createApp();
+        HttpSecurity.install(app);
         ServerSupport.configureErrors(app);
         app.get("/api/health", ctx -> {
             try {
@@ -83,7 +82,7 @@ public final class X2xServer {
                 ok.addProperty("rpc", "ok");
                 JsonResponses.write(ctx, ok);
             } catch (IOException error) {
-                JsonResponses.error(ctx, 502, error.getMessage());
+                JsonResponses.upstreamError(ctx);
             }
         });
         app.get("/api/status", ServerSupport.rpc(service::status));
@@ -99,16 +98,30 @@ public final class X2xServer {
         });
         app.get("/api/address/{address}/utxos", ctx -> JsonResponses.write(ctx, service.utxos(ctx.pathParam("address"))));
         app.get("/api/address/{address}/txs", ctx -> JsonResponses.write(ctx, Map.of("transactions", List.of())));
-        app.post("/api/tx/broadcast", ctx -> {
-            JsonObject body = new Gson().fromJson(ctx.body(), JsonObject.class);
-            JsonResponses.write(ctx, service.broadcast(body.get("rawTx").getAsString()));
-        });
+        app.post("/api/tx/broadcast", ctx -> JsonResponses.write(ctx, service.broadcast(readRawTx(ctx.body()))));
         app.post("/api/cache/invalidate/{address}", ctx -> {
             service.invalidate(ctx.pathParam("address"));
             JsonResponses.write(ctx, Map.of("ok", true));
         });
         app.error(404, JsonResponses::notFound);
         app.start(bindHost, listenPort);
+    }
+
+    static String readRawTx(String body) {
+        JsonObject json;
+        try {
+            json = new Gson().fromJson(body, JsonObject.class);
+        } catch (RuntimeException e) {
+            throw new ClientRequestException("invalid transaction");
+        }
+        if (json == null || !json.has("rawTx") || json.get("rawTx").isJsonNull() || !json.get("rawTx").isJsonPrimitive()) {
+            throw new ClientRequestException("invalid transaction");
+        }
+        JsonPrimitive primitive = json.get("rawTx").getAsJsonPrimitive();
+        if (!primitive.isString()) {
+            throw new ClientRequestException("invalid transaction");
+        }
+        return primitive.getAsString();
     }
 
     private static String env(String key, String fallback) {

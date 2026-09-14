@@ -86,30 +86,14 @@ bash scripts/run-server-services.sh
 | Official API | `https://server.2x2coin.com` | `127.0.0.1:50012` | `/api/*` |
 | Explorer fallback | `https://serverexplorer.2x2coin.com` | `127.0.0.1:50011` | `/ext/*` |
 
-Nginx example (API) — use `scripts/nginx-x2x-api.conf.example` (includes `proxy_read_timeout 30s`):
+Nginx: copy both example files. `limit_req_zone` must live in the http context (`conf.d`), not inside a `server` block. The site file rate-limits `/api/tx/broadcast` more tightly, sets `client_max_body_size 64k`, and adds security headers.
 
-```nginx
-server {
-    listen 443 ssl;
-    server_name server.2x2coin.com;
-    location / {
-        proxy_pass http://127.0.0.1:50012;
-        proxy_read_timeout 30s;
-    }
-}
+```bash
+sudo cp scripts/nginx-x2x-rate-limit.conf.example /etc/nginx/conf.d/x2x-rate-limit.conf
+sudo cp scripts/nginx-x2x-api.conf.example /etc/nginx/sites-available/x2x-api
 ```
 
-Nginx example (explorer):
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name serverexplorer.2x2coin.com;
-    location / {
-        proxy_pass http://127.0.0.1:50011;
-    }
-}
-```
+See [SERVER.md](SERVER.md) for the full proxy, rate-limit, and `certbot --reuse-key` notes.
 
 ## 4. Test from outside the VPS
 
@@ -132,10 +116,11 @@ Expected: `{"api":"ok","rpc":"ok"}` and `{"explorer":"ok","rpc":"ok"}`.
 
 ```bash
 sudo apt-get install -y nginx certbot python3-certbot-nginx
+sudo cp scripts/nginx-x2x-rate-limit.conf.example /etc/nginx/conf.d/x2x-rate-limit.conf
 sudo cp scripts/nginx-x2x-api.conf.example /etc/nginx/sites-available/x2x-api
 sudo ln -sf /etc/nginx/sites-available/x2x-api /etc/nginx/sites-enabled/x2x-api
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d server.2x2coin.com -d serverexplorer.2x2coin.com
+sudo certbot --nginx --reuse-key -d server.2x2coin.com -d serverexplorer.2x2coin.com
 ```
 
 ### From any machine (laptop, phone, CI)
@@ -240,7 +225,7 @@ Common causes:
 
 | Symptom | Cause |
 |---|---|
-| `2x2coin-cli ... authorization failed` | `X2X_RPC_USER` / `X2X_RPC_PASSWORD` differ from the daemon, or `2x2coin-cli` is missing |
+| `2x2coin-cli ... authorization failed` | `rpcuser` / `rpcpassword` in `~/.2x2coin/2x2coin.conf` differ from the daemon, or `2x2coin-cli` is missing |
 | `failed to start 2x2coin-cli` | binary not on `PATH` — set `X2X_CLI=/usr/local/bin/2x2coin-cli` |
 | `Connection refused` / CLI error | `2x2coind` is not running or `server=1` is missing |
 | `502` with a CLI message | API/explorer is up, but `2x2coin-cli` cannot talk to the daemon |
