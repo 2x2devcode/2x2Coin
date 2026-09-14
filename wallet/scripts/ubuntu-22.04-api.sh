@@ -78,7 +78,7 @@ if [[ "${X2X_FORCE_MOCK:-}" == "1" ]]; then
 elif ! command -v "${X2X_CLI}" >/dev/null 2>&1; then
   USE_MOCK=1
 elif ! "${X2X_CLI}" ${X2X_RPC_HOST:+-rpcconnect="$X2X_RPC_HOST"} ${X2X_RPC_PORT:+-rpcport="$X2X_RPC_PORT"} \
-      ${X2X_RPC_USER:+-rpcuser="$X2X_RPC_USER"} ${X2X_RPC_PASSWORD:+-rpcpassword="$X2X_RPC_PASSWORD"} \
+      ${X2XCOIN_CONF:+-conf="$X2XCOIN_CONF"} \
       getblockcount >/dev/null 2>&1; then
   USE_MOCK=1
 fi
@@ -99,6 +99,7 @@ mkdir -p "$INDEX_DIR" "$WALLET_DIR/.run"
 
 if [[ "$USE_MOCK" -eq 1 ]]; then
   echo "3) 2x2coin-cli/daemon indisponivel — subindo MockRpcServer + mock-2x2coin-cli"
+  unset X2XCOIN_CONF
   export X2X_RPC_HOST="${BIND_HOST}"
   export X2X_RPC_PORT="${MOCK_RPC_PORT}"
   export X2X_RPC_USER="${X2X_RPC_USER:-x2xrpc}"
@@ -116,7 +117,12 @@ else
 fi
 
 export BIND_HOST INDEX_DIR EXPLORER_FALLBACK_ENABLED
-export X2X_CLI X2X_SERVER_LIB X2X_RPC_HOST X2X_RPC_PORT X2X_RPC_USER X2X_RPC_PASSWORD X2XCOIN_CONF X2X_DATADIR
+export X2X_CLI X2X_SERVER_LIB X2X_RPC_HOST X2X_RPC_PORT X2XCOIN_CONF X2X_DATADIR
+if [[ "$USE_MOCK" -eq 1 ]]; then
+  export X2X_RPC_USER X2X_RPC_PASSWORD
+else
+  unset X2X_RPC_USER X2X_RPC_PASSWORD
+fi
 
 echo "4) Iniciando API ${BIND_HOST}:${API_PORT} e explorer ${BIND_HOST}:${EXPLORER_PORT}..."
 nohup env PORT="$API_PORT" java -cp "$LIB_DIR/*" com.x2xcoin.wallet.server.X2xServer \

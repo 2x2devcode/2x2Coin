@@ -37,7 +37,7 @@ final class RpcClient {
     }
 
     RpcClient(List<String> cliCommand, String host, int port, String user, String password) {
-        this(cliCommand, host, port, user, password, env("X2XCOIN_CONF", ""), env("X2X_DATADIR", ""), readTimeoutSeconds());
+        this(cliCommand, host, port, user, password, "", "", readTimeoutSeconds());
     }
 
     RpcClient(
@@ -78,32 +78,7 @@ final class RpcClient {
     }
 
     JsonElement call(String method, JsonArray params) throws IOException {
-        List<String> command = new ArrayList<>(cliCommand);
-        if (host != null && !host.isBlank()) {
-            command.add("-rpcconnect=" + host);
-        }
-        if (port > 0) {
-            command.add("-rpcport=" + port);
-        }
-        if (!user.isBlank()) {
-            command.add("-rpcuser=" + user);
-        }
-        if (!password.isBlank()) {
-            command.add("-rpcpassword=" + password);
-        }
-        command.add("-rpcclienttimeout=" + callTimeoutSeconds);
-        if (!confFile.isBlank()) {
-            command.add("-conf=" + confFile);
-        }
-        if (!dataDir.isBlank()) {
-            command.add("-datadir=" + dataDir);
-        }
-        command.add(method);
-        if (params != null) {
-            for (JsonElement element : params) {
-                command.add(toCliArg(element));
-            }
-        }
+        List<String> command = commandLine(method, params);
 
         ProcessBuilder builder = new ProcessBuilder(command);
         builder.redirectErrorStream(false);
@@ -140,6 +115,41 @@ final class RpcClient {
             throw new IOException("2x2coin-cli " + method + " failed (exit " + exit + "): " + detail);
         }
         return parseCliOutput(out);
+    }
+
+    /**
+     * Builds the 2x2coin-cli argv. When {@code -conf} is set, user/password stay off the command
+     * line so they do not appear in {@code ps}. Tests pass credentials without a conf file.
+     */
+    List<String> commandLine(String method, JsonArray params) {
+        List<String> command = new ArrayList<>(cliCommand);
+        if (host != null && !host.isBlank()) {
+            command.add("-rpcconnect=" + host);
+        }
+        if (port > 0) {
+            command.add("-rpcport=" + port);
+        }
+        command.add("-rpcclienttimeout=" + callTimeoutSeconds);
+        if (!confFile.isBlank()) {
+            command.add("-conf=" + confFile);
+        } else {
+            if (!user.isBlank()) {
+                command.add("-rpcuser=" + user);
+            }
+            if (!password.isBlank()) {
+                command.add("-rpcpassword=" + password);
+            }
+        }
+        if (!dataDir.isBlank()) {
+            command.add("-datadir=" + dataDir);
+        }
+        command.add(method);
+        if (params != null) {
+            for (JsonElement element : params) {
+                command.add(toCliArg(element));
+            }
+        }
+        return command;
     }
 
     private static JsonElement parseCliOutput(String output) {
@@ -183,7 +193,7 @@ final class RpcClient {
         }
     }
 
-    private static int readTimeoutSeconds() {
+    static int readTimeoutSeconds() {
         String value = System.getenv("RPC_TIMEOUT_SECONDS");
         if (value == null || value.isBlank()) {
             return 8;

@@ -22,14 +22,15 @@ rpc_call() {
   if [[ -n "${X2X_RPC_PORT:-}" ]]; then
     cli+=("-rpcport=${X2X_RPC_PORT}")
   fi
-  if [[ -n "${X2X_RPC_USER:-}" ]]; then
-    cli+=("-rpcuser=${X2X_RPC_USER}")
-  fi
-  if [[ -n "${X2X_RPC_PASSWORD:-}" ]]; then
-    cli+=("-rpcpassword=${X2X_RPC_PASSWORD}")
-  fi
   if [[ -f "$CONF" ]]; then
     cli+=("-conf=${CONF}")
+  else
+    if [[ -n "${X2X_RPC_USER:-}" ]]; then
+      cli+=("-rpcuser=${X2X_RPC_USER}")
+    fi
+    if [[ -n "${X2X_RPC_PASSWORD:-}" ]]; then
+      cli+=("-rpcpassword=${X2X_RPC_PASSWORD}")
+    fi
   fi
   "${cli[@]}" "${method}"
 }
@@ -50,8 +51,8 @@ else
   echo "   FALHA: arquivo nao encontrado"
   CONF_USER=""
 fi
-echo "   CLI: ${X2X_CLI} -> ${X2X_RPC_HOST}:${X2X_RPC_PORT} user=${X2X_RPC_USER:-<conf/cookie>}"
-if [[ -n "${CONF_USER}" && "${X2X_RPC_USER:-}" != "${CONF_USER}" ]]; then
+echo "   CLI: ${X2X_CLI} -> ${X2X_RPC_HOST}:${X2X_RPC_PORT} conf=${X2XCOIN_CONF:-<none>}"
+if [[ -n "${X2X_RPC_USER:-}" && -n "${CONF_USER}" && "${X2X_RPC_USER}" != "${CONF_USER}" ]]; then
   echo "   AVISO: usuario em uso difere do conf (remova export X2X_RPC_USER antigo do shell)"
 fi
 echo ""

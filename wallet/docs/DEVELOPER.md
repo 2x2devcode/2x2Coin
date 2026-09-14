@@ -22,21 +22,26 @@ Tests cover:
 
 ## Update the certificate pin
 
-TLS pins are not stored in the APK yet (`server.2x2coin.com` / `serverexplorer.2x2coin.com` need a production certificate). Until then the HTTP client trusts the system store.
+The APK pins SHA-256 SPKI hashes in `x2x-android/src/main/cpp/pin_config.cpp` (leaf + Let's Encrypt YE1). OkHttp accepts a match on **any** pin in the presented chain.
 
-After HTTPS is live, store the SHA-256 SPKI in `x2x-android/src/main/cpp/pin_config.cpp`.
-
-1. Get the TLS public-key SHA-256:
+Renew production certificates with a stable leaf key so installed apps keep working:
 
 ```bash
-echo | openssl s_client -connect server.2x2coin.com:443 -servername server.2x2coin.com 2>/dev/null \
-  | openssl x509 -pubkey -noout \
+sudo certbot --nginx --reuse-key -d server.2x2coin.com -d serverexplorer.2x2coin.com
+```
+
+If the leaf key or the YE1 intermediate changes, recompute pins and ship a new APK:
+
+```bash
+echo | openssl s_client -connect server.2x2coin.com:443 -servername server.2x2coin.com -showcerts 2>/dev/null \
+  | awk '/BEGIN CERT/,/END CERT/{print}' > /tmp/chain.pem
+# For each cert in the chain:
+openssl x509 -in leaf.pem -pubkey -noout \
   | openssl pkey -pubin -outform der \
   | openssl dgst -sha256 -hex
 ```
 
-2. Generate XOR bytes for `x2x-android/src/main/cpp/pin_config.cpp` (`getApiPinnedHashes` / `getExplorerPinnedHashes`)
-3. Rebuild the APK
+Put the hex strings (no `SHA2-256(stdin)=` prefix) in `getApiPinnedHashes` / `getExplorerPinnedHashes`. Rebuild the APK.
 
 ## Debug the Android app (adb logcat)
 

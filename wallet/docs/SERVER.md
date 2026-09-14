@@ -84,18 +84,22 @@ KEEP_RUNNING=1 bash scripts/ubuntu-22.04-api.sh   # leave API and explorer runni
 Local ports bind to `127.0.0.1` only. External access is DNS + TLS + nginx.
 
 1. **A** records for `server.2x2coin.com` and `serverexplorer.2x2coin.com` pointing at the VPS IP
-2. Install `wallet/scripts/nginx-x2x-api.conf.example` into sites-available and enable it
-3. Let's Encrypt certificate
+2. Install the rate-limit zones (`scripts/nginx-x2x-rate-limit.conf.example`) into `/etc/nginx/conf.d/`
+3. Install `scripts/nginx-x2x-api.conf.example` into sites-available and enable it
+4. Let's Encrypt certificate — use `--reuse-key` so the Android TLS pin survives renewals
 
 ```bash
 sudo apt-get install -y nginx certbot python3-certbot-nginx
+sudo cp scripts/nginx-x2x-rate-limit.conf.example /etc/nginx/conf.d/x2x-rate-limit.conf
 sudo cp scripts/nginx-x2x-api.conf.example /etc/nginx/sites-available/x2x-api
 sudo ln -sf /etc/nginx/sites-available/x2x-api /etc/nginx/sites-enabled/x2x-api
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d server.2x2coin.com -d serverexplorer.2x2coin.com
+sudo certbot --nginx --reuse-key -d server.2x2coin.com -d serverexplorer.2x2coin.com
 ```
 
-`proxy_pass` must target `http://127.0.0.1:50012` (API) and `http://127.0.0.1:50011` (explorer), with `proxy_read_timeout 30s`.
+`proxy_pass` must target `http://127.0.0.1:50012` (API) and `http://127.0.0.1:50011` (explorer), with `proxy_read_timeout 30s`. The example also sets `client_max_body_size 64k`, security headers, and `limit_req` (tighter on `/api/tx/broadcast`).
+
+If nginx returns **429**, the client is sending too many requests. The Java process has a second per-IP limiter (`API_RATE_LIMIT`, `API_ADDRESS_RATE_LIMIT`, `API_BROADCAST_RATE_LIMIT`).
 
 ## Tests
 
@@ -154,7 +158,7 @@ Checks that the process is up and that `2x2coin-cli getblockcount` responds.
 {"api":"ok","rpc":"ok"}
 ```
 
-RPC failure → HTTP **502** `{"error":"..."}`.
+RPC failure → HTTP **502** `{"error":"upstream unavailable"}`. The CLI error stays in the server log.
 
 ### `GET /api/status`
 
@@ -239,7 +243,7 @@ Reserved for the app. Currently returns an empty list:
 
 ### `POST /api/tx/broadcast`
 
-Relays a raw hex transaction signed on the phone (`sendrawtransaction`).
+Relays a raw hex transaction signed on the phone (`sendrawtransaction`). The body must be JSON `{"rawTx":"<hex>"}`. Missing, odd-length, non-hex, or oversized payloads (more than 128 KiB of hex) return HTTP **400** `{"error":"invalid transaction"}` and never reach `2x2coin-cli`.
 
 ```bash
 curl -sS -H 'Content-Type: application/json' \
@@ -305,15 +309,18 @@ Both fields are the same value.
 
 | HTTP | Body | When |
 |---|---|---|
+| 400 | `{"error":"invalid transaction"}` | Broadcast hex missing, not hex, or too large |
 | 404 | `{"error":"not found"}` | Unknown route |
-| 502 | `{"error":"..."}` | `2x2coin-cli` failed or timed out |
-| 500 | `{"error":"..."}` | Internal error |
+| 413 | `{"error":"invalid request"}` | Request body larger than 64 KiB |
+| 429 | `{"error":"too many requests"}` | Per-IP rate limit (nginx or Java) |
+| 502 | `{"error":"upstream unavailable"}` | `2x2coin-cli` failed or timed out |
+| 500 | `{"error":"internal error"}` | Internal error |
 
-HTML proxy pages are replaced with `upstream error (see server logs)`.
+CLI stderr, RPC passwords, and HTML proxy pages are not returned to clients. Check `logs/x2x-api.log`.
 
 ## Environment variables
 
-The `run` / `restart` / `diagnose` scripts read `rpcuser` / `rpcpassword` / `rpcport` from `~/.2x2coin/2x2coin.conf` (`scripts/load-rpc-env.sh`). Shell exports take precedence.
+The `run` / `restart` / `diagnose` scripts read `rpcport` from `~/.2x2coin/2x2coin.conf` (`scripts/load-rpc-env.sh`) and export `X2XCOIN_CONF`. They do **not** export `rpcpassword` into the Java process. `2x2coin-cli` reads user/password from the conf file. Mock-mode (`ubuntu-22.04-api.sh`) still sets `X2X_RPC_USER` / `X2X_RPC_PASSWORD` because there is no conf.
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -323,8 +330,12 @@ The `run` / `restart` / `diagnose` scripts read `rpcuser` / `rpcpassword` / `rpc
 | `X2X_CLI` | `2x2coin-cli` | CLI binary |
 | `X2X_RPC_HOST` | `127.0.0.1` | `-rpcconnect` |
 | `X2X_RPC_PORT` | `15189` | `-rpcport` |
-| `X2X_RPC_USER` / `X2X_RPC_PASSWORD` | from conf | CLI credentials |
-| `X2XCOIN_CONF` | `~/.2x2coin/2x2coin.conf` | `-conf` |
+| `X2XCOIN_CONF` | `~/.2x2coin/2x2coin.conf` if present | `-conf` for `2x2coin-cli` (preferred; password stays out of `ps` / Java env) |
+| `X2X_RPC_USER` / `X2X_RPC_PASSWORD` | unset in production | Only for the mock CLI when no conf file is used |
+| `API_RATE_WINDOW_MS` | `60000` | In-process rate-limit window |
+| `API_RATE_LIMIT` | `120` | Requests per IP per window (default routes) |
+| `API_ADDRESS_RATE_LIMIT` | `40` | Address lookups per IP per window |
+| `API_BROADCAST_RATE_LIMIT` | `12` | Broadcasts per IP per window |
 | `X2X_DATADIR` | empty | `-datadir` |
 | `RPC_TIMEOUT_SECONDS` | `8` | Timeout per CLI call |
 | `INDEX_DIR` | `~/.x2x-wallet-index` | Index directory |
@@ -367,6 +378,6 @@ tail -n 80 logs/x2x-explorer.log
 
 The client (`x2x-api`) calls these public HTTPS URLs. App developers without VPS access: [APP_API.md](APP_API.md).
 
-TLS pinning in the APK is still empty until the production hosts have a stable certificate. See [DEVELOPER.md](DEVELOPER.md) and [USER_MANUAL.md](USER_MANUAL.md).
+The Android client pins the production leaf SPKI plus the Let's Encrypt YE1 intermediate (`x2x-android/src/main/cpp/pin_config.cpp`). Renew certificates with `certbot --reuse-key` so the leaf pin survives rotation. See [DEVELOPER.md](DEVELOPER.md).
 
 Full install (JDK, APK, keystore): [INSTALLATION.md](INSTALLATION.md). Module layout: [ARCHITECTURE.md](ARCHITECTURE.md).

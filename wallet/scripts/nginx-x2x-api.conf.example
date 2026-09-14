@@ -1,9 +1,18 @@
-# Exemplo nginx para API 2x2Coin (Ubuntu).
-# Ajuste ssl_certificate* conforme seu certificado.
+# Example nginx for the 2x2 JSON API and explorer (Ubuntu).
+# Requires the rate-limit zones from nginx-x2x-rate-limit.conf.example
+# in the http context (/etc/nginx/conf.d/).
 #
-# Instale em /etc/nginx/sites-available/x2x-api e ative com:
-#   sudo ln -s /etc/nginx/sites-available/x2x-api /etc/nginx/sites-enabled/
+# Install:
+#   sudo cp scripts/nginx-x2x-rate-limit.conf.example /etc/nginx/conf.d/x2x-rate-limit.conf
+#   sudo cp scripts/nginx-x2x-api.conf.example /etc/nginx/sites-available/x2x-api
+#   sudo ln -sf /etc/nginx/sites-available/x2x-api /etc/nginx/sites-enabled/x2x-api
 #   sudo nginx -t && sudo systemctl reload nginx
+#
+# Issue or renew certificates with a stable leaf key so the Android TLS pin
+# survives Let's Encrypt rotation:
+#   sudo certbot --nginx --reuse-key -d server.2x2coin.com -d serverexplorer.2x2coin.com
+
+server_tokens off;
 
 server {
     listen 443 ssl;
@@ -12,7 +21,18 @@ server {
     # ssl_certificate /etc/letsencrypt/live/server.2x2coin.com/fullchain.pem;
     # ssl_certificate_key /etc/letsencrypt/live/server.2x2coin.com/privkey.pem;
 
-    location / {
+    client_max_body_size 64k;
+    client_body_timeout 10s;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Cache-Control "no-store" always;
+
+    location /api/tx/broadcast {
+        limit_req zone=x2x_broadcast burst=4 nodelay;
+        limit_req_status 429;
+
         proxy_pass http://127.0.0.1:50012;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
@@ -20,7 +40,22 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # Respostas rapidas da API; deep scan roda em segundo plano no servidor.
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 30s;
+        proxy_read_timeout 30s;
+    }
+
+    location / {
+        limit_req zone=x2x_api burst=20 nodelay;
+        limit_req_status 429;
+
+        proxy_pass http://127.0.0.1:50012;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
         proxy_connect_timeout 10s;
         proxy_send_timeout 30s;
         proxy_read_timeout 30s;
@@ -31,7 +66,21 @@ server {
     listen 443 ssl;
     server_name serverexplorer.2x2coin.com;
 
+    # ssl_certificate /etc/letsencrypt/live/serverexplorer.2x2coin.com/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/serverexplorer.2x2coin.com/privkey.pem;
+
+    client_max_body_size 64k;
+    client_body_timeout 10s;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options DENY always;
+    add_header Referrer-Policy no-referrer always;
+    add_header Cache-Control "no-store" always;
+
     location / {
+        limit_req zone=x2x_api burst=20 nodelay;
+        limit_req_status 429;
+
         proxy_pass http://127.0.0.1:50011;
         proxy_http_version 1.1;
         proxy_set_header Host $host;

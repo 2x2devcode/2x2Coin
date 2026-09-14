@@ -36,7 +36,8 @@ echo "  API:      ${BIND_HOST}:${API_PORT}  -> https://server.2x2coin.com"
 echo "  Explorer: ${BIND_HOST}:${EXPLORER_PORT}  -> https://serverexplorer.2x2coin.com"
 echo "  CLI:      ${X2X_CLI} -> ${X2X_RPC_HOST}:${X2X_RPC_PORT}"
 
-export BIND_HOST X2X_CLI X2X_RPC_HOST X2X_RPC_PORT X2X_RPC_USER X2X_RPC_PASSWORD X2XCOIN_CONF X2X_DATADIR
+export BIND_HOST X2X_CLI X2X_RPC_HOST X2X_RPC_PORT X2XCOIN_CONF X2X_DATADIR
+unset X2X_RPC_USER X2X_RPC_PASSWORD
 PORT="$API_PORT" java -cp "$LIB_DIR/*" com.x2xcoin.wallet.server.X2xServer &
 API_PID=$!
 

@@ -29,7 +29,8 @@ echo "Compilando API e explorer..."
 LIB_DIR="${ROOT_DIR}/x2x-server/build/install/x2x-server/lib"
 mkdir -p "${LOG_DIR}" "${PID_DIR}"
 
-export BIND_HOST X2X_CLI X2X_RPC_HOST X2X_RPC_PORT X2X_RPC_USER X2X_RPC_PASSWORD X2XCOIN_CONF X2X_DATADIR
+export BIND_HOST X2X_CLI X2X_RPC_HOST X2X_RPC_PORT X2XCOIN_CONF X2X_DATADIR
+unset X2X_RPC_USER X2X_RPC_PASSWORD
 
 echo "Iniciando API em ${BIND_HOST}:${API_PORT}..."
 nohup env PORT="${API_PORT}" java -cp "${LIB_DIR}/*" com.x2xcoin.wallet.server.X2xServer \
