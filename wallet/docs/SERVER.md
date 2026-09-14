@@ -355,6 +355,7 @@ The API does **not** use daemon `getreceivedbyaddress` / `listunspent` (those RP
 | `failed to start 2x2coin-cli` | Binary not on `PATH` — set `X2X_CLI` |
 | `Connection refused` on RPC `15189` | `2x2coind` down or missing `server=1` |
 | balance `0` with `scanning: true` | Index still catching up; wait or check fallback |
+| Balance stays at an old amount after a spend | Index stored the receive and missed the spend. This build checks `gettxout` and drops spent outputs. Redeploy the API/explorer. |
 | Plain-text `Server Error` | Old build; `git pull` + `restart-server-services.sh` |
 
 ```bash

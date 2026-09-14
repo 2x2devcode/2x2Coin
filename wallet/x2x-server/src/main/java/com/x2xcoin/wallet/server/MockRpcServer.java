@@ -3,6 +3,7 @@ package com.x2xcoin.wallet.server;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -87,6 +88,7 @@ public final class MockRpcServer implements AutoCloseable {
             case "getblockhash" -> GSON.toJsonTree("00000eea834a06692bc4f56d6f0061631c72fd75431ce9e5d7f3b9d712dc3a9b");
             case "getblock", "getblockbynumber" -> genesisBlock();
             case "getrawtransaction" -> genesisTx();
+            case "gettxout" -> txOut(params);
             case "sendrawtransaction" -> GSON.toJsonTree(
                     "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             );
@@ -97,6 +99,18 @@ public final class MockRpcServer implements AutoCloseable {
                 yield error;
             }
         };
+    }
+
+    private static JsonElement txOut(JsonArray params) {
+        if (params != null && params.size() >= 2
+                && genesisTx().get("txid").getAsString().equals(params.get(0).getAsString())
+                && params.get(1).getAsInt() == 0) {
+            JsonObject out = new JsonObject();
+            out.addProperty("value", 0);
+            out.addProperty("confirmations", 1);
+            return out;
+        }
+        return JsonNull.INSTANCE;
     }
 
     private static JsonObject info() {
