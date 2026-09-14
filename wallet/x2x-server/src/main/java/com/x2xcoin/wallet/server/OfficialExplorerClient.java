@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -89,6 +90,7 @@ final class OfficialExplorerClient {
                 txids.add(item.get("txid").getAsString());
             }
         }
+        Collections.reverse(txids);
         return txids;
     }
 

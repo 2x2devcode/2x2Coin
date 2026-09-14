@@ -25,6 +25,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -177,7 +178,7 @@ final class ChainIndexer {
         if (!AddressCodec.isValidP2pkh(address)) {
             throw new IOException("invalid address: " + address);
         }
-        List<IndexedUtxo> indexed = readIndexedOnly(address, minConfirmations);
+        List<IndexedUtxo> indexed = liveIndexedUtxos(address, minConfirmations, rpcClient);
         long total = 0L;
         for (IndexedUtxo utxo : indexed) {
             total += utxo.amountSatoshis;
@@ -193,11 +194,70 @@ final class ChainIndexer {
         if (!AddressCodec.isValidP2pkh(address)) {
             throw new IOException("invalid address: " + address);
         }
-        List<IndexedUtxo> indexed = readIndexedOnly(address, minConfirmations);
+        List<IndexedUtxo> indexed = liveIndexedUtxos(address, minConfirmations, rpcClient);
         if (indexed.isEmpty()) {
             scheduleDeepScan(address, minConfirmations, rpcClient);
         }
         return indexed;
+    }
+
+    /**
+     * Indexed UTXOs that the node still reports as unspent via {@code gettxout}.
+     * Lookback/explorer enrich can store a receive and miss a later spend; the node is the source of truth.
+     */
+    private List<IndexedUtxo> liveIndexedUtxos(String address, int minConfirmations, RpcClient rpcClient)
+            throws IOException {
+        List<IndexedUtxo> indexed = readIndexedOnly(address, minConfirmations);
+        if (indexed.isEmpty()) {
+            return indexed;
+        }
+        List<IndexedUtxo> live = new ArrayList<>();
+        List<IndexedUtxo> spent = new ArrayList<>();
+        for (IndexedUtxo utxo : indexed) {
+            Boolean unspent = isUnspentOnNode(rpcClient, utxo);
+            if (unspent == null || unspent) {
+                live.add(utxo);
+            } else {
+                spent.add(utxo);
+            }
+        }
+        if (!spent.isEmpty()) {
+            writeLock.lock();
+            try {
+                for (IndexedUtxo utxo : spent) {
+                    removeOutpoint(utxo.txid, utxo.vout);
+                }
+            } finally {
+                writeLock.unlock();
+            }
+            persistState();
+            notifyAddressUpdated(address);
+        }
+        return live;
+    }
+
+    private static Boolean isUnspentOnNode(RpcClient rpcClient, IndexedUtxo utxo) {
+        try {
+            JsonArray params = new JsonArray();
+            params.add(utxo.txid);
+            params.add(utxo.vout);
+            params.add(true);
+            JsonElement result = rpcClient.call("gettxout", params);
+            if (result == null || result.isJsonNull()) {
+                return false;
+            }
+            if (result.isJsonObject() && result.getAsJsonObject().size() == 0) {
+                return false;
+            }
+            if (result.isJsonPrimitive()) {
+                String text = result.getAsString();
+                return text != null && !text.isBlank() && !"null".equalsIgnoreCase(text.trim());
+            }
+            return true;
+        } catch (IOException error) {
+            System.err.println("[chain-indexer] gettxout " + utxo.txid + ":" + utxo.vout + ": " + error.getMessage());
+            return null;
+        }
     }
 
     private List<IndexedUtxo> readIndexedOnly(String address, int minConfirmations) {
@@ -305,55 +365,68 @@ final class ChainIndexer {
         if (txids.isEmpty()) {
             return;
         }
-        boolean changed = false;
+        List<JsonObject> transactions = new ArrayList<>();
         for (String txid : txids) {
-            if (indexRawTransaction(txid, address, rpcClient)) {
-                changed = true;
+            JsonObject tx = fetchRawTransaction(txid, rpcClient);
+            if (tx != null) {
+                transactions.add(tx);
             }
         }
-        if (changed) {
+        if (applyAddressTransactions(address, transactions)) {
             persistState();
             notifyAddressUpdated(address);
         }
     }
 
-    private boolean indexRawTransaction(String txid, String address, RpcClient rpcClient) throws IOException {
+    private JsonObject fetchRawTransaction(String txid, RpcClient rpcClient) {
         JsonArray params = new JsonArray();
         params.add(txid);
         params.add(1);
-        JsonObject tx;
         try {
-            tx = rpcClient.call("getrawtransaction", params).getAsJsonObject();
+            return rpcClient.call("getrawtransaction", params).getAsJsonObject();
         } catch (IOException e) {
             System.err.println("[chain-indexer] getrawtransaction " + txid + ": " + e.getMessage());
-            return false;
+            return null;
         }
-        if (!tx.has("blockheight")) {
-            return false;
-        }
-        int blockHeight = tx.get("blockheight").getAsInt();
-        Map<String, IndexedUtxo> created = new LinkedHashMap<>();
-        List<String> spentKeys = new ArrayList<>();
-        scanTransactionForAddress(tx, blockHeight, address, created, spentKeys);
+    }
 
-        if (created.isEmpty() && spentKeys.isEmpty()) {
-            return false;
+    /**
+     * Apply explorer/raw txs oldest-first so a later spend removes the receive instead of
+     * re-adding it (Iquidus {@code /ext/getaddresstxs} is newest-first).
+     */
+    private boolean applyAddressTransactions(String address, List<JsonObject> transactions) {
+        List<JsonObject> ordered = new ArrayList<>();
+        for (JsonObject tx : transactions) {
+            if (tx != null && tx.has("blockheight")) {
+                ordered.add(tx);
+            }
         }
-
+        ordered.sort(Comparator.comparingInt(tx -> tx.get("blockheight").getAsInt()));
+        boolean changed = false;
         writeLock.lock();
         try {
-            chainTip = Math.max(chainTip, blockHeight);
-            chainTipUpdatedAtMs = System.currentTimeMillis();
-            for (String spentKey : spentKeys) {
-                removeOutpointByKey(spentKey);
-            }
-            for (IndexedUtxo utxo : created.values()) {
-                addOutpoint(utxo.txid, utxo.vout, utxo.address, utxo.amountSatoshis, utxo.blockHeight);
+            for (JsonObject tx : ordered) {
+                int blockHeight = tx.get("blockheight").getAsInt();
+                Map<String, IndexedUtxo> created = new LinkedHashMap<>();
+                List<String> spentKeys = new ArrayList<>();
+                scanTransactionForAddress(tx, blockHeight, address, created, spentKeys);
+                if (created.isEmpty() && spentKeys.isEmpty()) {
+                    continue;
+                }
+                chainTip = Math.max(chainTip, blockHeight);
+                chainTipUpdatedAtMs = System.currentTimeMillis();
+                for (IndexedUtxo utxo : created.values()) {
+                    addOutpoint(utxo.txid, utxo.vout, utxo.address, utxo.amountSatoshis, utxo.blockHeight);
+                }
+                for (String spentKey : spentKeys) {
+                    removeOutpointByKey(spentKey);
+                }
+                changed = true;
             }
         } finally {
             writeLock.unlock();
         }
-        return true;
+        return changed;
     }
 
     private void mergeReverseFromTip(
@@ -365,6 +438,7 @@ final class ChainIndexer {
             long deadlineMs
     ) throws IOException {
         int fromHeight = Math.max(START_HEIGHT, tip - REVERSE_SCAN_MAX_BLOCKS + 1);
+        Set<String> seenSpent = new HashSet<>();
         for (int height = tip; height >= fromHeight; height--) {
             if (System.currentTimeMillis() >= deadlineMs) {
                 break;
@@ -381,15 +455,16 @@ final class ChainIndexer {
                 Map<String, IndexedUtxo> created = new LinkedHashMap<>();
                 List<String> spentKeys = new ArrayList<>();
                 scanTransactionForAddress(txElement.getAsJsonObject(), height, address, created, spentKeys);
-                for (IndexedUtxo utxo : created.values()) {
-                    merged.put(outpointKey(utxo.txid, utxo.vout), utxo);
-                }
                 for (String spentKey : spentKeys) {
+                    seenSpent.add(spentKey);
                     merged.remove(spentKey);
                 }
-            }
-            if (!merged.isEmpty()) {
-                break;
+                for (IndexedUtxo utxo : created.values()) {
+                    String key = outpointKey(utxo.txid, utxo.vout);
+                    if (!seenSpent.contains(key)) {
+                        merged.put(key, utxo);
+                    }
+                }
             }
         }
     }

@@ -45,6 +45,11 @@ final class AddressQueryService {
                 source = "explorer";
                 indexer.scheduleExplorerEnrich(address, explorerClient, rpcClient);
             }
+        } else {
+            Long explorerBalance = tryExplorerBalance(address);
+            if (explorerBalance != null && explorerBalance < satoshis) {
+                indexer.scheduleExplorerEnrich(address, explorerClient, rpcClient);
+            }
         }
         long cacheMs = satoshis == 0L && scanning ? ZERO_SCANNING_CACHE_MS : BALANCE_CACHE_MS;
         balanceCache.put(address, new CachedBalance(satoshis, scanning, source, System.currentTimeMillis() + cacheMs));
