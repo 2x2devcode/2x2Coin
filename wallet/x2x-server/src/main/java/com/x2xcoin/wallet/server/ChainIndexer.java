@@ -91,14 +91,24 @@ final class ChainIndexer {
     }
 
     static ChainIndexer open() throws IOException {
-        String configured = firstNonBlank(System.getenv("INDEX_DIR"), System.getProperty("x2x.index.dir"));
-        Path indexDir = configured == null || configured.isBlank()
-                ? Path.of(System.getProperty("user.home"), ".x2x-wallet-index")
-                : Path.of(configured);
+        return open(resolveIndexDir());
+    }
+
+    static ChainIndexer open(Path indexDir) throws IOException {
         Files.createDirectories(indexDir);
         ChainIndexer indexer = new ChainIndexer(indexDir);
         indexer.loadState();
         return indexer;
+    }
+
+    /**
+     * Tests set {@code x2x.index.dir}; that must win over a VPS {@code INDEX_DIR} inherited by Gradle.
+     */
+    static Path resolveIndexDir() {
+        String configured = firstNonBlank(System.getProperty("x2x.index.dir"), System.getenv("INDEX_DIR"));
+        return configured == null || configured.isBlank()
+                ? Path.of(System.getProperty("user.home"), ".x2x-wallet-index")
+                : Path.of(configured);
     }
 
     void setAddressUpdateListener(AddressUpdateListener listener) {

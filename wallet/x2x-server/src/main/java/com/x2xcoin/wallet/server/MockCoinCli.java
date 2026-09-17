@@ -71,7 +71,7 @@ public final class MockCoinCli {
 
     static String formatLikeCoinCli(JsonElement result) {
         if (result == null || result.isJsonNull()) {
-            return "";
+            return "null";
         }
         if (result.isJsonPrimitive() && result.getAsJsonPrimitive().isString()) {
             return result.getAsString();

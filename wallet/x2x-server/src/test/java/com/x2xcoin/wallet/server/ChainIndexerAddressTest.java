@@ -26,7 +26,7 @@ class ChainIndexerAddressTest {
         output.addProperty("n", 0);
         output.addProperty("value", 2.0);
 
-        ChainIndexer indexer = ChainIndexer.open();
+        ChainIndexer indexer = ChainIndexer.open(indexDir);
         var method = ChainIndexer.class.getDeclaredMethod("outputHasAddress", JsonObject.class, String.class);
         method.setAccessible(true);
         assertTrue((Boolean) method.invoke(indexer, output, address));
