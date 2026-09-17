@@ -147,7 +147,7 @@ check() {
   local url=$2
   local expect=$3
   local body
-  body="$(curl -sS --max-time 5 "$url" || true)"
+  body="$(curl -sS --max-time 15 "$url" || true)"
   if echo "$body" | grep -q "$expect"; then
     echo "   OK  $label -> $body"
   else

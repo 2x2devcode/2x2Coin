@@ -192,7 +192,7 @@ Suggested fee (`MIN_TX_FEE` / `DEFAULT_FEE_PER_KB` = 10,000 satoshis).
 
 ### `GET /api/address/{addr}/balance`
 
-Address balance from the local indexer. If the index has not seen the address yet and the local balance is zero, it queries `https://explorer.2x2coin.com/ext/getbalance/{addr}` (can be disabled).
+Address balance from the local indexer. If the index has not seen the address yet, the HTTP response returns immediately with `scanning: true` and the public explorer is queried **in the background** (does not block `/api/address/.../balance`). Can be disabled with `EXPLORER_FALLBACK_ENABLED=false`.
 
 ```json
 {

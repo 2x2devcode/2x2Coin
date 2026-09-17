@@ -76,6 +76,25 @@ class WalletApiSmokeTest {
         }
     }
 
+    @Test
+    void balanceDoesNotWaitForUnreachableExplorer() throws Exception {
+        System.setProperty("x2x.index.dir", indexDir.toString());
+        try (MockRpcServer mock = new MockRpcServer("127.0.0.1", 0, "x2xrpc", "secret")) {
+            mock.start();
+            RpcClient rpcClient = new RpcClient(RpcClient.mockCliCommand(), mock.host(), mock.port(), "x2xrpc", "secret");
+            AddressQueryService addressQuery = new AddressQueryService(
+                    rpcClient,
+                    ChainIndexer.open(indexDir),
+                    new OfficialExplorerClient("http://192.0.2.1", true)
+            );
+            long started = System.nanoTime();
+            JsonObject balance = addressQuery.balance("2NHBXKyRY4ZBvyfyuZ2fZvqaGyo89vMGFW");
+            long elapsedMs = (System.nanoTime() - started) / 1_000_000L;
+            assertEquals("2NHBXKyRY4ZBvyfyuZ2fZvqaGyo89vMGFW", balance.get("address").getAsString());
+            assertTrue(elapsedMs < 2_000L, "balance blocked on explorer for " + elapsedMs + "ms");
+        }
+    }
+
     private static JsonObject get(HttpClient http, int port, String path) throws Exception {
         HttpRequest request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
                 .timeout(Duration.ofSeconds(5))
