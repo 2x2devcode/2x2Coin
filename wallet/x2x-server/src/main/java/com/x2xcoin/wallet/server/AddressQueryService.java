@@ -1,7 +1,6 @@
 package com.x2xcoin.wallet.server;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.x2xcoin.wallet.core.wallet.Amount;
 
@@ -37,19 +36,9 @@ final class AddressQueryService {
         long satoshis = result.satoshis();
         boolean scanning = result.scanning();
         String source = "index";
-        if (satoshis == 0L) {
-            Long explorerBalance = tryExplorerBalance(address);
-            if (explorerBalance != null && explorerBalance > 0L) {
-                satoshis = explorerBalance;
-                scanning = false;
-                source = "explorer";
-                indexer.scheduleExplorerEnrich(address, explorerClient, rpcClient);
-            }
-        } else {
-            Long explorerBalance = tryExplorerBalance(address);
-            if (explorerBalance != null && explorerBalance < satoshis) {
-                indexer.scheduleExplorerEnrich(address, explorerClient, rpcClient);
-            }
+        // Never wait on explorer.2x2coin.com in the HTTP thread (6s timeout blew the 5s smoke test).
+        if (satoshis == 0L || scanning) {
+            indexer.scheduleExplorerEnrich(address, explorerClient, rpcClient);
         }
         long cacheMs = satoshis == 0L && scanning ? ZERO_SCANNING_CACHE_MS : BALANCE_CACHE_MS;
         balanceCache.put(address, new CachedBalance(satoshis, scanning, source, System.currentTimeMillis() + cacheMs));
@@ -59,11 +48,7 @@ final class AddressQueryService {
     JsonObject utxos(String address) throws IOException {
         List<ChainIndexer.IndexedUtxo> utxos = indexer.utxosFor(address, 1, rpcClient);
         if (utxos.isEmpty()) {
-            Long explorerBalance = tryExplorerBalance(address);
-            if (explorerBalance != null && explorerBalance > 0L) {
-                indexer.scheduleExplorerEnrich(address, explorerClient, rpcClient);
-                utxos = indexer.utxosFor(address, 1, rpcClient);
-            }
+            indexer.scheduleExplorerEnrich(address, explorerClient, rpcClient);
         }
         JsonArray array = new JsonArray();
         for (ChainIndexer.IndexedUtxo utxo : utxos) {
@@ -81,18 +66,6 @@ final class AddressQueryService {
 
     void invalidate(String address) {
         balanceCache.remove(address);
-    }
-
-    private Long tryExplorerBalance(String address) {
-        if (!explorerClient.enabled()) {
-            return null;
-        }
-        try {
-            return explorerClient.balanceSatoshis(address);
-        } catch (IOException error) {
-            System.err.println("[address-query] explorer fallback failed for " + address + ": " + error.getMessage());
-            return null;
-        }
     }
 
     private JsonObject balanceResponse(String address, long satoshis, boolean scanning, String source) {

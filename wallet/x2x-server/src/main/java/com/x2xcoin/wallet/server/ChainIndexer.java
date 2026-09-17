@@ -791,21 +791,33 @@ final class ChainIndexer {
         }
     }
 
-    private JsonObject expandTxidsIfNeeded(RpcClient rpcClient, JsonObject block, int height) throws IOException {
+    private JsonObject expandTxidsIfNeeded(RpcClient rpcClient, JsonObject block, int height) {
         JsonArray transactions = block.getAsJsonArray("tx");
         if (transactions == null || transactions.size() == 0 || transactions.get(0).isJsonObject()) {
             return block;
         }
         JsonArray expanded = new JsonArray();
+        int skipped = 0;
         for (JsonElement element : transactions) {
             JsonArray params = new JsonArray();
             params.add(element.getAsString());
             params.add(1);
-            JsonObject tx = rpcClient.call("getrawtransaction", params).getAsJsonObject();
-            if (!tx.has("blockheight")) {
-                tx.addProperty("blockheight", height);
+            try {
+                JsonObject tx = rpcClient.call("getrawtransaction", params).getAsJsonObject();
+                if (!tx.has("blockheight")) {
+                    tx.addProperty("blockheight", height);
+                }
+                expanded.add(tx);
+            } catch (IOException e) {
+                skipped++;
+                if (skipped <= 3) {
+                    System.err.println("[chain-indexer] skip tx in block " + height + ": " + e.getMessage());
+                }
             }
-            expanded.add(tx);
+        }
+        if (skipped > 3) {
+            System.err.println("[chain-indexer] skipped " + skipped + " txs in block " + height
+                    + " (enable txindex=1 or upgrade 2x2coind so getblockbynumber returns full txs)");
         }
         block.add("tx", expanded);
         return block;
