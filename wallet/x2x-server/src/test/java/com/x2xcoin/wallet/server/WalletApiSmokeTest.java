@@ -27,7 +27,7 @@ class WalletApiSmokeTest {
             RpcClient rpcClient = new RpcClient(RpcClient.mockCliCommand(), mock.host(), mock.port(), "x2xrpc", "secret");
             AddressQueryService addressQuery = new AddressQueryService(
                     rpcClient,
-                    ChainIndexer.open(),
+                    ChainIndexer.open(indexDir),
                     new OfficialExplorerClient("http://127.0.0.1:1", false)
             );
             io.javalin.Javalin app = JavalinSupport.createApp();

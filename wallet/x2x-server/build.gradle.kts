@@ -23,6 +23,9 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // VPS shells often export INDEX_DIR / explorer URL; tests must not touch the live index.
+    environment("INDEX_DIR", "")
+    environment("EXPLORER_FALLBACK_ENABLED", "false")
 }
 
 tasks.register<JavaExec>("runApi") {

@@ -1,5 +1,6 @@
 package com.x2xcoin.wallet.server;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -42,7 +43,12 @@ class ChainIndexerSpentUtxoTest {
         try (MockRpcServer mock = new MockRpcServer("127.0.0.1", 0, "x2xrpc", "secret")) {
             mock.start();
             RpcClient rpcClient = new RpcClient(RpcClient.mockCliCommand(), mock.host(), mock.port(), "x2xrpc", "secret");
-            ChainIndexer indexer = ChainIndexer.open();
+            ChainIndexer indexer = ChainIndexer.open(indexDir);
+            JsonArray params = new JsonArray();
+            params.add(spentTxid);
+            params.add(1);
+            params.add(true);
+            assertTrue(rpcClient.call("gettxout", params).isJsonNull(), "mock gettxout must report the outpoint spent");
             ChainIndexer.BalanceResult result = indexer.balanceFast(address, 1, rpcClient);
             assertEquals(0L, result.satoshis());
             assertTrue(indexer.utxosFor(address, 1, rpcClient).isEmpty());
@@ -78,7 +84,7 @@ class ChainIndexerSpentUtxoTest {
             RpcClient rpcClient = new RpcClient(RpcClient.mockCliCommand(), mock.host(), mock.port(), "x2xrpc", "secret");
             AddressQueryService service = new AddressQueryService(
                     rpcClient,
-                    ChainIndexer.open(),
+                    ChainIndexer.open(indexDir),
                     new OfficialExplorerClient("http://127.0.0.1:1", false)
             );
             JsonObject balance = service.balance(address);
