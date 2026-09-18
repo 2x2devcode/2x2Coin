@@ -392,6 +392,12 @@ final class ChainIndexer {
         List<JsonObject> transactions = new ArrayList<>();
         for (String txid : txids) {
             JsonObject tx = fetchRawTransaction(txid, rpcClient);
+            if (tx == null || !tx.has("blockheight")) {
+                JsonObject fromExplorer = explorer.decodedTransaction(txid);
+                if (fromExplorer != null) {
+                    tx = fromExplorer;
+                }
+            }
             if (tx != null) {
                 transactions.add(tx);
             }

@@ -30,6 +30,8 @@ public final class NetworkParameters {
     public static final String OFFICIAL_API_HOST = "server.2x2coin.com";
     public static final String EXPLORER_HOST = "serverexplorer.2x2coin.com";
     public static final String PUBLIC_EXPLORER_HOST = "explorer.2x2coin.com";
+    /** Iquidus explorer that currently serves /ext/getaddress and decoded txs. */
+    public static final String IQUIDUS_EXPLORER_BASE_URL = "http://184.107.115.220:3819";
     /** Local bind on VPS; public URL uses HTTPS :443 via reverse proxy. */
     public static final String SERVER_BIND_HOST = "127.0.0.1";
     public static final int OFFICIAL_API_PORT = 50012;

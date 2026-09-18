@@ -12,7 +12,7 @@ VPS operators: see [SERVER.md](SERVER.md).
 |---|---|---|
 | Official wallet API | `https://server.2x2coin.com` | Status, fee, balance, UTXOs, broadcast |
 | Wallet explorer JSON | `https://serverexplorer.2x2coin.com` | Fallback status and fallback balance |
-| Public block explorer | `https://explorer.2x2coin.com` | Extra fallback the **server** uses; the app does not call this host directly |
+| Public block explorer | `http://184.107.115.220:3819` | Iquidus used by the **server** when the local index misses a UTXO. The app does not call this host directly |
 
 Hardcoded in `NetworkParameters` / `ApiEndpoints`:
 
@@ -141,7 +141,7 @@ curl -sS "$API/api/address/${ADDR}/balance"
 | Field | App use |
 |---|---|
 | `balance` | String in 2x2 (8 decimals), **not** satoshis |
-| `scanning` | `true` only while the indexer is still catching up. If `indexedHeight` equals `chainTip`, a `0` balance is final. |
+| `scanning` | `true` while the indexer is catching up, or while Iquidus reported coins that are still being imported into the UTXO index |
 | `source` | `index` or `explorer` (server-side fallback) |
 | `indexedHeight` / `chainTip` | How far the server index is vs the chain |
 

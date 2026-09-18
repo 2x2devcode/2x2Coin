@@ -37,6 +37,8 @@ echo "  Explorer: ${BIND_HOST}:${EXPLORER_PORT}  -> https://serverexplorer.2x2co
 echo "  CLI:      ${X2X_CLI} -> ${X2X_RPC_HOST}:${X2X_RPC_PORT}"
 
 export BIND_HOST X2X_CLI X2X_RPC_HOST X2X_RPC_PORT X2XCOIN_CONF X2X_DATADIR
+export EXPLORER_FALLBACK_ENABLED="${EXPLORER_FALLBACK_ENABLED:-true}"
+export EXPLORER_FALLBACK_URL="${EXPLORER_FALLBACK_URL:-http://184.107.115.220:3819}"
 unset X2X_RPC_USER X2X_RPC_PASSWORD
 PORT="$API_PORT" java -cp "$LIB_DIR/*" com.x2xcoin.wallet.server.X2xServer &
 API_PID=$!

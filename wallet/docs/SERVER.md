@@ -192,7 +192,7 @@ Suggested fee (`MIN_TX_FEE` / `DEFAULT_FEE_PER_KB` = 10,000 satoshis).
 
 ### `GET /api/address/{addr}/balance`
 
-Address balance from the local indexer. If the full index is still catching up and the address has no known UTXOs, the HTTP response returns immediately with `scanning: true` and the public explorer is queried **in the background** (does not block `/api/address/.../balance`). When `indexedHeight` equals `chainTip` (and `INDEX_START_HEIGHT` is 0), a zero balance is final and `scanning` is `false`. Can be disabled with `EXPLORER_FALLBACK_ENABLED=false`.
+Address balance from the local indexer. If the full index is still catching up and the address has no known UTXOs, the HTTP response returns immediately with `scanning: true` and the public explorer is queried **in the background** (does not block `/api/address/.../balance`). When the local index is at the tip but still shows `0`, the API peeks Iquidus (`EXPLORER_FALLBACK_URL`, default `http://184.107.115.220:3819`) and returns that balance with `source: explorer` while it imports the UTXOs. Can be disabled with `EXPLORER_FALLBACK_ENABLED=false`.
 
 ```json
 {
@@ -344,16 +344,16 @@ The `run` / `restart` / `diagnose` scripts read `rpcport` from `~/.2x2coin/2x2co
 | `INDEX_FAST_BUDGET_MS` | `6000` | Fast query budget |
 | `INDEX_LOOKBACK_WINDOWS` | `200,500,1000,2000` | Deep scan windows |
 | `INDEX_QUERY_BUDGET_MS` | `60000` | Deep scan budget |
-| `EXPLORER_FALLBACK_ENABLED` | `true` | Use the public explorer when local balance is 0 |
-| `EXPLORER_FALLBACK_URL` | `https://explorer.2x2coin.com` | Fallback base URL |
+| `EXPLORER_FALLBACK_ENABLED` | `true` | Use Iquidus when local balance is 0 |
+| `EXPLORER_FALLBACK_URL` | `http://184.107.115.220:3819` | Iquidus base URL (`/ext/getaddress`, `/api/getrawtransaction`) |
 
 ## Indexer
 
 The API does **not** use daemon `getreceivedbyaddress` / `listunspent` (those RPCs only see the node wallet). `ChainIndexer` scans blocks, stores UTXOs in `INDEX_DIR`, and serves `/api/address/...`.
 
 1. Fast query of the local UTXO index
-2. If the index is behind the tip and balance is 0, schedule a deep lookback and query the public explorer in the background
-3. Full background sync until `indexedHeight` equals `chainTip`. After that, a zero balance is final (`scanning: false`).
+2. If the local balance is 0, peek Iquidus `/ext/getbalance` (fast) and import txs from `/ext/getaddresstxs` + `/api/getrawtransaction` in the background
+3. Full background sync until `indexedHeight` equals `chainTip`. A local zero is not treated as final when the explorer reports coins.
 
 ## Troubleshooting
 
@@ -361,11 +361,12 @@ The API does **not** use daemon `getreceivedbyaddress` / `listunspent` (those RP
 |---|---|
 | `Could not resolve host` | Missing DNS A record |
 | timeout / `Connection refused` on `:443` | nginx down, firewall, or wrong IP |
-| HTTPS `502` / `504`, local OK | Wrong `proxy_pass` port or nginx timeout |
+| HTTPS `502` / `504`, local OK | Wrong `proxy_pass` port, nginx timeout, or Java API not running (`connection refused` on `:50012`) |
 | `2x2coin-cli ... authorization failed` | User/password mismatch with the daemon |
 | `failed to start 2x2coin-cli` | Binary not on `PATH` — set `X2X_CLI` |
 | `Connection refused` on RPC `15189` | `2x2coind` down or missing `server=1` |
 | balance `0` with `scanning: true` | Index still catching up; wait or check fallback |
+| API `0` while Iquidus shows coins on the **same** address | Local index missed the UTXO (no txindex / skipped txs). This build peeks Iquidus and imports the raw tx. Redeploy with `EXPLORER_FALLBACK_ENABLED=true`. |
 | balance `0` for address A while explorer shows coins on address B | Those are different addresses. Query `/api/address/B/balance`. The wallet Home screen now lists every local address. |
 | Balance stays at an old amount after a spend | Index stored the receive and missed the spend. This build checks `gettxout` and drops spent outputs. Redeploy the API/explorer. |
 | Plain-text `Server Error` | Old build; `git pull` + `restart-server-services.sh` |

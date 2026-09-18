@@ -36,9 +36,16 @@ final class AddressQueryService {
         long satoshis = result.satoshis();
         boolean scanning = result.scanning();
         String source = "index";
-        // Never wait on explorer.2x2coin.com in the HTTP thread (6s timeout blew the 5s smoke test).
         if (satoshis == 0L || scanning) {
             indexer.scheduleExplorerEnrich(address, explorerClient, rpcClient);
+        }
+        if (satoshis == 0L) {
+            Long explorerBalance = explorerClient.peekBalanceSatoshis(address);
+            if (explorerBalance != null && explorerBalance > 0L) {
+                satoshis = explorerBalance;
+                scanning = true;
+                source = "explorer";
+            }
         }
         long cacheMs = satoshis == 0L && scanning ? ZERO_SCANNING_CACHE_MS : BALANCE_CACHE_MS;
         balanceCache.put(address, new CachedBalance(satoshis, scanning, source, System.currentTimeMillis() + cacheMs));
