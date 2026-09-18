@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ChainIndexerSpentUtxoTest {
@@ -90,6 +91,30 @@ class ChainIndexerSpentUtxoTest {
             JsonObject balance = service.balance(address);
             assertEquals("0.00000000", balance.get("balance").getAsString());
             assertEquals(address, balance.get("address").getAsString());
+        }
+    }
+
+    @Test
+    void emptyBalanceIsNotScanningWhenIndexIsCaughtUp() throws Exception {
+        System.setProperty("x2x.index.dir", indexDir.toString());
+        String address = "2NHBXKyRY4ZBvyfyuZ2fZvqaGyo89vMGFW";
+        Files.writeString(indexDir.resolve("chain-index.json"), """
+                {
+                  "indexedHeight": 203857,
+                  "chainTip": 203857,
+                  "outpoints": {},
+                  "utxosByAddress": {}
+                }
+                """, StandardCharsets.UTF_8);
+
+        try (MockRpcServer mock = new MockRpcServer("127.0.0.1", 0, "x2xrpc", "secret")) {
+            mock.start();
+            RpcClient rpcClient = new RpcClient(RpcClient.mockCliCommand(), mock.host(), mock.port(), "x2xrpc", "secret");
+            ChainIndexer indexer = ChainIndexer.open(indexDir);
+            ChainIndexer.BalanceResult result = indexer.balanceFast(address, 1, rpcClient);
+            assertEquals(0L, result.satoshis());
+            assertFalse(result.scanning());
+            assertTrue(indexer.isFullyIndexed());
         }
     }
 }

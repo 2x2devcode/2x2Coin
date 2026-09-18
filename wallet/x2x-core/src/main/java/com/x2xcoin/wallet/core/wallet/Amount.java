@@ -25,4 +25,26 @@ public final class Amount {
                 .divide(new BigDecimal(NetworkParameters.COIN), NetworkParameters.COIN_DECIMALS, RoundingMode.DOWN);
         return value.toPlainString();
     }
+
+    public static String formatDisplay(String balance) {
+        if (balance == null || balance.isBlank()) {
+            return "0.00";
+        }
+        try {
+            return new BigDecimal(balance.trim()).setScale(2, RoundingMode.DOWN).toPlainString();
+        } catch (NumberFormatException e) {
+            return balance.trim();
+        }
+    }
+
+    public static boolean isZero(String balance) {
+        if (balance == null || balance.isBlank()) {
+            return true;
+        }
+        try {
+            return new BigDecimal(balance.trim()).compareTo(BigDecimal.ZERO) == 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
 }

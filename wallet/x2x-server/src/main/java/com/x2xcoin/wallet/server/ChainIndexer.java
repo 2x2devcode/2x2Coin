@@ -194,7 +194,7 @@ final class ChainIndexer {
             total += utxo.amountSatoshis;
         }
         boolean scanning = false;
-        if (total == 0L) {
+        if (total == 0L && !isFullyIndexed()) {
             scanning = scheduleDeepScan(address, minConfirmations, rpcClient);
         }
         return new BalanceResult(total, scanning);
@@ -205,10 +205,24 @@ final class ChainIndexer {
             throw new IOException("invalid address: " + address);
         }
         List<IndexedUtxo> indexed = liveIndexedUtxos(address, minConfirmations, rpcClient);
-        if (indexed.isEmpty()) {
+        if (indexed.isEmpty() && !isFullyIndexed()) {
             scheduleDeepScan(address, minConfirmations, rpcClient);
         }
         return indexed;
+    }
+
+    /**
+     * Full-chain index is at the tip, so a zero balance is authoritative.
+     * Deep-scan lookback is only needed while catch-up is still running or
+     * {@code INDEX_START_HEIGHT} skipped early blocks.
+     */
+    boolean isFullyIndexed() {
+        readLock.lock();
+        try {
+            return START_HEIGHT <= 0 && indexedHeight >= 0 && indexedHeight >= chainTip;
+        } finally {
+            readLock.unlock();
+        }
     }
 
     /**

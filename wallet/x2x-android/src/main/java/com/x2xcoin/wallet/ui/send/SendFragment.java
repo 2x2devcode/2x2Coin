@@ -8,6 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -48,9 +49,14 @@ public final class SendFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         destinationInput = view.findViewById(R.id.destinationInput);
         amountInput = view.findViewById(R.id.amountInput);
+        TextView fromAddress = view.findViewById(R.id.fromAddress);
         Button sendButton = view.findViewById(R.id.sendButton);
         Button scanQrButton = view.findViewById(R.id.scanQrButton);
         WalletRepository repository = ((MainActivity) requireActivity()).repository();
+        repository.activeAccount().ifPresentOrElse(
+                account -> fromAddress.setText("Enviando de: " + account.address()),
+                () -> fromAddress.setText("Nenhuma conta ativa")
+        );
 
         scanQrButton.setOnClickListener(v -> requestCameraAndScan());
         sendButton.setOnClickListener(v -> repository.runIo(() -> {

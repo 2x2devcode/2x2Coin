@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="100dp"
             android:gravity="center"
-            android:text="Saldo disponível"
+            android:text="Saldo da carteira"
             android:textColor="@color/x2x_muted" />
 
         <TextView
@@ -32,6 +32,25 @@
             android:textColor="@color/x2x_green"
             android:textSize="32sp"
             android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/activeAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:textColor="@color/x2x_muted"
+            android:textIsSelectable="true"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/accountsSummary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="center"
+            android:textColor="@color/x2x_text"
+            android:textSize="13sp" />
 
         <TextView
             android:id="@+id/networkStatus"

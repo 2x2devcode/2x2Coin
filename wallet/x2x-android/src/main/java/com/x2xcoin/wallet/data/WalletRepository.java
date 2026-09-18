@@ -79,6 +79,7 @@ public final class WalletRepository {
         }
         WalletAccount account = WalletAccount.fromWif(label, wif.trim());
         walletStore.addAccount(account);
+        walletStore.setActiveAccount(account.id());
         saveWalletSnapshotOrThrow();
         return account;
     }
@@ -141,6 +142,14 @@ public final class WalletRepository {
 
     public String refreshBalance(String address) throws Exception {
         return refreshBalance(address, false);
+    }
+
+    public List<AccountBalance> refreshAllBalances(boolean invalidateCache) throws Exception {
+        List<AccountBalance> results = new ArrayList<>();
+        for (WalletAccount account : walletStore.accounts()) {
+            results.add(new AccountBalance(account, refreshBalanceResponse(account.address(), invalidateCache)));
+        }
+        return results;
     }
 
     public X2xApiClient.NetworkStatus refreshNetworkStatus() throws Exception {
@@ -221,5 +230,8 @@ public final class WalletRepository {
         } catch (Exception ignored) {
             // Caller can surface persistence errors when needed.
         }
+    }
+
+    public record AccountBalance(WalletAccount account, X2xApiClient.BalanceResponse response) {
     }
 }
