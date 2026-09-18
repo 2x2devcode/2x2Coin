@@ -72,7 +72,15 @@ final class OfficialExplorerClient {
         if (!enabled) {
             return List.of();
         }
-        String body = get("/ext/getaddresstxs/" + address + "/0/" + Math.max(1, limit));
+        int max = Math.max(1, limit);
+        List<String> txids = txidsFromAddressTxsBody(getQuiet("/ext/getaddresstxs/" + address + "/0/" + max), max);
+        if (!txids.isEmpty()) {
+            return txids;
+        }
+        return txidsFromAddressBody(getQuiet("/ext/getaddress/" + address), max);
+    }
+
+    static List<String> txidsFromAddressTxsBody(String body, int limit) {
         if (body == null || body.isBlank() || !body.trim().startsWith("[")) {
             return List.of();
         }
@@ -91,6 +99,43 @@ final class OfficialExplorerClient {
             }
         }
         Collections.reverse(txids);
+        if (txids.size() > limit) {
+            return new ArrayList<>(txids.subList(0, limit));
+        }
+        return txids;
+    }
+
+    /**
+     * Iquidus {@code /ext/getaddress} puts txids in {@code last_txs[].addresses}.
+     */
+    static List<String> txidsFromAddressBody(String body, int limit) {
+        if (body == null || body.isBlank() || !body.trim().startsWith("{")) {
+            return List.of();
+        }
+        JsonObject json = GSON.fromJson(body, JsonObject.class);
+        if (json == null || !json.has("last_txs") || !json.get("last_txs").isJsonArray()) {
+            return List.of();
+        }
+        List<String> txids = new ArrayList<>();
+        for (JsonElement element : json.getAsJsonArray("last_txs")) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject item = element.getAsJsonObject();
+            String txid = null;
+            if (item.has("txid") && item.get("txid").isJsonPrimitive()) {
+                txid = item.get("txid").getAsString();
+            } else if (item.has("addresses") && item.get("addresses").isJsonPrimitive()) {
+                txid = item.get("addresses").getAsString();
+            }
+            if (txid != null && !txid.isBlank()) {
+                txids.add(txid);
+            }
+        }
+        Collections.reverse(txids);
+        if (txids.size() > limit) {
+            return new ArrayList<>(txids.subList(0, limit));
+        }
         return txids;
     }
 
@@ -109,6 +154,14 @@ final class OfficialExplorerClient {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IOException("explorer request interrupted", e);
+        }
+    }
+
+    private String getQuiet(String path) {
+        try {
+            return get(path);
+        } catch (IOException ignored) {
+            return null;
         }
     }
 

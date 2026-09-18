@@ -141,7 +141,7 @@ curl -sS "$API/api/address/${ADDR}/balance"
 | Field | App use |
 |---|---|
 | `balance` | String in 2x2 (8 decimals), **not** satoshis |
-| `scanning` | `true` → index still catching up; show a “updating” state, do not treat `0` as final |
+| `scanning` | `true` only while the indexer is still catching up. If `indexedHeight` equals `chainTip`, a `0` balance is final. |
 | `source` | `index` or `explorer` (server-side fallback) |
 | `indexedHeight` / `chainTip` | How far the server index is vs the chain |
 
@@ -159,6 +159,8 @@ curl -sS "$EXPLORER/ext/getaddress/${ADDR}"
 ```
 
 Read `balance`, or `final_balance` if `balance` is missing.
+
+Each P2PKH address has its own UTXO set. `GET /api/address/2UzmL6k…/balance` returning `0` does **not** mean `2aEv33…` is empty. Curl the same address shown on the Receive tab / QR code. The Home screen sums every account stored on the phone and shows which address is active.
 
 ### 5. UTXOs (send — inputs)
 

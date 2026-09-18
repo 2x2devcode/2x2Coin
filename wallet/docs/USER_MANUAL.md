@@ -37,8 +37,11 @@ The session locks automatically when the app goes to the background.
 ## Multiple addresses
 
 1. Open **Wallets**
-2. Tap **Generate new address**
-3. Each address can have an internal label
+2. Each row shows the label, address, and balance
+3. Tap a row to make that address **active** (Receive, Send, and WIF export use only the active address)
+4. Tap **Generate new address** to add another key — this does **not** switch away from the funded address
+
+The Home screen shows the **sum of every address** in the wallet, plus a per-address breakdown. If coins sit on an inactive address, Home tells you to activate it in Wallets.
 
 ## Backup
 
@@ -62,3 +65,5 @@ App developer (HTTPS + curl, no VPS): [APP_API.md](APP_API.md).
 Server operator: [SERVER.md](SERVER.md).
 
 If the API is down, the balance may lag until the fallback responds.
+
+If Home shows `0` while a block explorer shows coins, confirm the explorer address is listed under **Wallets**. The API is per-address: `https://server.2x2coin.com/api/address/<that-address>/balance`.

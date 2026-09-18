@@ -9,6 +9,15 @@
     android:paddingBottom="20dp"
     android:paddingTop="100dp">
 
+    <TextView
+        android:id="@+id/fromAddress"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textColor="@color/x2x_muted"
+        android:textIsSelectable="true"
+        android:textSize="13sp" />
+
     <Button
         android:id="@+id/scanQrButton"
         android:layout_width="wrap_content"

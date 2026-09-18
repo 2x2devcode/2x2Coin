@@ -51,7 +51,9 @@ public final class WalletStore {
 
     public void addAccount(WalletAccount account) {
         accounts.add(account);
-        activeAccountId = account.id();
+        if (activeAccountId == null || activeAccount().isEmpty()) {
+            activeAccountId = account.id();
+        }
     }
 
     public void setActiveAccount(String accountId) {

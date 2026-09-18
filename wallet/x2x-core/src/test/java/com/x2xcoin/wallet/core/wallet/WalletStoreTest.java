@@ -19,4 +19,16 @@ class WalletStoreTest {
         );
         assertFalse(restored.exportEncrypted("wallet-pass-123").isEmpty());
     }
+
+    @Test
+    void generatingAnotherAddressDoesNotStealTheActiveAccount() {
+        WalletStore store = new WalletStore();
+        WalletAccount principal = WalletAccount.createNew("Principal");
+        store.addAccount(principal);
+        WalletAccount extra = WalletAccount.createNew("Conta 2");
+        store.addAccount(extra);
+        assertEquals(principal.id(), store.activeAccount().orElseThrow().id());
+        store.setActiveAccount(extra.id());
+        assertEquals(extra.id(), store.activeAccount().orElseThrow().id());
+    }
 }
